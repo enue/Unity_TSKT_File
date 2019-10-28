@@ -24,11 +24,21 @@ namespace TSKT
 
         public void Add(AsyncOperation operation)
         {
+            if (operations.TrueForAll(_ => _.isDone))
+            {
+                operations.Clear();
+            }
+
             operations.Add(operation);
         }
 
         public float GetProgress()
         {
+            if (operations.Count == 0)
+            {
+                return 1f;
+            }
+
             if (operations.TrueForAll(_ => _.isDone))
             {
                 operations.Clear();
