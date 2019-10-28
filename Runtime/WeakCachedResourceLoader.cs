@@ -9,7 +9,7 @@ namespace TSKT
     public class WeakCachedResourceLoader<T> : CustomYieldInstruction
         where T : Object
     {
-        static readonly Dictionary<string, System.WeakReference> cache = new Dictionary<string, System.WeakReference>();
+        static readonly Dictionary<string, System.WeakReference<T>> cache = new Dictionary<string, System.WeakReference<T>>();
 
         UniTask<T> task;
         public T Asset => task.Result;
@@ -18,7 +18,7 @@ namespace TSKT
         {
             foreach (var it in cache.ToArray())
             {
-                if (!it.Value.IsAlive)
+                if (!it.Value.TryGetTarget(out var _))
                 {
                     cache.Remove(it.Key);
                 }
@@ -31,9 +31,8 @@ namespace TSKT
         {
             if (cache.TryGetValue(path, out var result))
             {
-                if (result.IsAlive)
+                if (result.TryGetTarget(out var asset))
                 {
-                    var asset = result.Target as T;
                     task = new UniTask<T>(asset);
                     return asset;
                 }
@@ -44,31 +43,31 @@ namespace TSKT
 
             if (result != null)
             {
-                result.Target = Asset;
+                result.SetTarget(Asset);
             }
             else
             {
-                cache.Add(path, new System.WeakReference(Asset));
+                cache.Add(path, new System.WeakReference<T>(Asset));
             }
             return Asset;
         }
 
         public UniTask<T> LoadAsync(string path, System.Action<T> callback = null)
         {
-            if (cache.TryGetValue(path, out var asset))
+            if (cache.TryGetValue(path, out var weakRef))
             {
-                if (asset.IsAlive)
+                if (weakRef.TryGetTarget(out var asset))
                 {
-                    task = new UniTask<T>(asset.Target as T);
+                    task = new UniTask<T>(asset);
                     callback?.Invoke(Asset);
-                    return new UniTask<T>(Asset);
+                    return task;
                 }
             }
 
             task = LoadAsyncCoroutine(path);
             task.GetAwaiter().OnCompleted(() =>
             {
-                cache[path] = new System.WeakReference(Asset);
+                cache[path] = new System.WeakReference<T>(Asset);
                 callback?.Invoke(Asset);
             });
 

@@ -37,7 +37,7 @@ namespace TSKT
             {
                 task = new UniTask<T>(asset);
                 callback?.Invoke(asset);
-                return new UniTask<T>(asset);
+                return task;
             }
 
             task = LoadAsyncCoroutine(path);
