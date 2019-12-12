@@ -28,7 +28,10 @@ namespace TSKT
             {
                 if (weakRef.TryGetTarget(out var asset))
                 {
-                    return asset;
+                    if (asset)
+                    {
+                        return asset;
+                    }
                 }
             }
 
@@ -46,23 +49,23 @@ namespace TSKT
             return result;
         }
 
-        public static UniTask<T> LoadAsync(string path)
+        public async static UniTask<T> LoadAsync(string path)
         {
             if (cache.TryGetValue(path, out var weakRef))
             {
                 if (weakRef.TryGetTarget(out var asset))
                 {
-                    return new UniTask<T>(asset);
+                    if (asset)
+                    {
+                        return asset;
+                    }
                 }
             }
 
-            var task = ResourcesUtil.LoadAsync<T>(path);
-            task.GetAwaiter().OnCompleted(() =>
-            {
-                cache[path] = new System.WeakReference<T>(task.Result);
-            });
+            var result = await ResourcesUtil.LoadAsync<T>(path);
+            cache[path] = new System.WeakReference<T>(result);
 
-            return task;
+            return result;
         }
 
         static public void Expire()

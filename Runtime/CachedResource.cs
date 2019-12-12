@@ -15,7 +15,10 @@ namespace TSKT
         {
             if (cache.TryGetValue(path, out var result))
             {
-                return result;
+                if (result)
+                {
+                    return result;
+                }
             }
 
             var asset = Resources.Load<T>(path);
@@ -25,20 +28,20 @@ namespace TSKT
             return asset;
         }
 
-        static public UniTask<T> LoadAsync(string path)
+        async static public UniTask<T> LoadAsync(string path)
         {
             if (cache.TryGetValue(path, out var asset))
             {
-                return new UniTask<T>(asset);
+                if (asset)
+                {
+                    return asset;
+                }
             }
 
-            var task = ResourcesUtil.LoadAsync<T>(path);
-            task.GetAwaiter().OnCompleted(() =>
-            {
-                cache[path] = task.Result;
-            });
+            var result = await ResourcesUtil.LoadAsync<T>(path);
+            cache[path] = result;
 
-            return task;
+            return result;
         }
 
         static public void Expire()
