@@ -10,73 +10,74 @@ using UniRx.Async;
 
 namespace TSKT
 {
-    public static class File
+    public class File
     {
         readonly static public string AppDirectory = Path.GetDirectoryName(Application.dataPath);
-        public static Files.IResolver Resolver { get; set; }
+        public Files.ILoadSaveResolver Resolver { get; }
+        public Files.ISerializeResolver SerialzieResolver { get; }
 
-        public static void SaveBytes(string filename, byte[] data)
+        public File(Files.ILoadSaveResolver resolver, Files.ISerializeResolver serializeResolver)
+        {
+            Resolver = resolver;
+            SerialzieResolver = serializeResolver;
+        }
+
+        public void SaveBytes(string filename, byte[] data)
         {
             SaveBytes(filename, data, async: false).Forget();
         }
-        public static UniTask SaveBytesAsync(string filename, byte[] data)
+        public UniTask SaveBytesAsync(string filename, byte[] data)
         {
             return SaveBytes(filename, data, async: true);
         }
 
-        static UniTask SaveBytes(string filename, byte[] data, bool async)
+        UniTask SaveBytes(string filename, byte[] data, bool async)
         {
             return Resolver.SaveBytes(filename, data, async);
         }
 
-        static public void SaveString(string filename, string data)
+        public void SaveString(string filename, string data)
         {
             SaveString(filename, data, async: false).Forget();
         }
 
-        static public UniTask SaveStringAsync(string filename, string data)
+        public UniTask SaveStringAsync(string filename, string data)
         {
             return SaveString(filename, data, async: true);
         }
 
-        static async UniTask SaveString(string filename, string data, bool async)
+        async UniTask SaveString(string filename, string data, bool async)
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(data);
             await SaveBytes(filename, bytes, async: async);
         }
 
-        static public void Save<T>(string filename, T obj, bool crypt)
+        public void Save<T>(string filename, T obj)
         {
-            Save(filename, obj, crypt, async: false).Forget();
+            Save(filename, obj, async: false).Forget();
         }
 
-        static public UniTask SaveAsync<T>(string filename, T obj, bool crypt)
+        public UniTask SaveAsync<T>(string filename, T obj)
         {
-            return Save(filename, obj, crypt, async: true);
+            return Save(filename, obj, async: true);
         }
 
-        static async UniTask Save<T>(string filename, T obj, bool crypt, bool async)
+        async UniTask Save<T>(string filename, T obj, bool async)
         {
+            byte[] bytes;
             if (async)
             {
-                await UniTask.SwitchToTaskPool();
+                bytes = await UniTask.Run(() => SerialzieResolver.Serialize(obj));
             }
-
-            var bytes = Resolver.Serialize(obj);
-            if (crypt)
+            else
             {
-                bytes = Resolver.Encrypt(bytes);
-            }
-
-            if (async)
-            {
-                await UniTask.SwitchToMainThread();
+                bytes = SerialzieResolver.Serialize(obj);
             }
 
             await SaveBytes(filename, bytes, async: async);
         }
 
-        public static bool AnyExist(params string[] filenames)
+        public bool AnyExist(params string[] filenames)
         {
             if (filenames == null)
             {
@@ -89,31 +90,31 @@ namespace TSKT
             return Resolver.AnyExist(filenames);
         }
 
-        public static Option<byte[]> LoadBytes(string filename)
+        public Option<byte[]> LoadBytes(string filename)
         {
             return LoadBytes(filename, async: false).Result;
         }
-        public static UniTask<Option<byte[]>> LoadBytesAsync(string filename)
+        public UniTask<Option<byte[]>> LoadBytesAsync(string filename)
         {
             return LoadBytes(filename, async: true);
         }
 
-        static UniTask<Option<byte[]>> LoadBytes(string filename, bool async)
+        UniTask<Option<byte[]>> LoadBytes(string filename, bool async)
         {
             return Resolver.LoadBytes(filename, async);
         }
 
-        public static Option<string> LoadString(string filename)
+        public Option<string> LoadString(string filename)
         {
             return LoadString(filename, async: false).Result;
         }
 
-        public static UniTask<Option<string>> LoadStringAsync(string filename)
+        public UniTask<Option<string>> LoadStringAsync(string filename)
         {
             return LoadString(filename, async: true);
         }
 
-        static async UniTask<Option<string>> LoadString(string filename, bool async)
+        async UniTask<Option<string>> LoadString(string filename, bool async)
         {
             var result = await LoadBytes(filename, async);
             if (!result.hasValue)
@@ -123,17 +124,17 @@ namespace TSKT
             return new Option<string>(System.Text.Encoding.UTF8.GetString(result.value));
         }
 
-        public static Option<T> Load<T>(string filename, bool decrypt)
+        public Option<T> Load<T>(string filename)
         {
-            return Load<T>(filename, decrypt: decrypt, async: false).Result;
+            return Load<T>(filename, async: false).Result;
         }
 
-        public static UniTask<Option<T>> LoadAsync<T>(string filename, bool decrypt)
+        public UniTask<Option<T>> LoadAsync<T>(string filename)
         {
-            return Load<T>(filename, decrypt: decrypt, async: true);
+            return Load<T>(filename, async: true);
         }
 
-        async static UniTask<Option<T>> Load<T>(string filename, bool decrypt, bool async)
+        async UniTask<Option<T>> Load<T>(string filename, bool async)
         {
             try
             {
@@ -144,29 +145,14 @@ namespace TSKT
                 }
 
                 var bytes = result.value;
-                if (decrypt)
-                {
-                    if (async)
-                    {
-                        bytes = await UniTask.Run(() => Resolver.Decrypt(bytes));
-                    }
-                    else
-                    {
-                        bytes = Resolver.Decrypt(bytes);
-                    }
-                    if (bytes == null)
-                    {
-                        return Option<T>.Empty;
-                    }
-                }
                 if (async)
                 {
-                    var t = await UniTask.Run(() => Resolver.Deserialize<T>(bytes));
+                    var t = await UniTask.Run(() => SerialzieResolver.Deserialize<T>(bytes));
                     return new Option<T>(t);
                 }
                 else
                 {
-                    var t = Resolver.Deserialize<T>(bytes);
+                    var t = SerialzieResolver.Deserialize<T>(bytes);
                     return new Option<T>(t);
                 }
             }

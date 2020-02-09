@@ -1,35 +1,29 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.IO;
 using UniRx.Async;
-using System.IO;
+using UnityEngine;
 
 namespace TSKT.Files
 {
-    public interface IResolver
+    public interface ILoadSaveResolver
     {
         bool AnyExist(params string[] filenames);
         UniTask<Option<byte[]>> LoadBytes(string filename, bool async);
         UniTask SaveBytes(string filename, byte[] data, bool async);
-        byte[] Decrypt(byte[] bytes);
-        byte[] Encrypt(byte[] bytes);
+    }
+
+    public interface ISerializeResolver
+    {
         byte[] Serialize<T>(T obj);
         T Deserialize<T>(byte[] bytes);
     }
 
-    public class DefaultResolver : IResolver
+    public class DefaultResolver : ILoadSaveResolver
     {
         readonly string directory;
-        readonly string password;
-        readonly byte[] salt;
-        readonly int iterations;
 
-        public DefaultResolver(string directory, string password, byte[] salt, int iterations)
+        public DefaultResolver(string directory)
         {
             this.directory = directory;
-            this.password = password;
-            this.salt = salt;
-            this.iterations = iterations;
         }
 
         string GetPath(string filename)
@@ -56,16 +50,6 @@ namespace TSKT.Files
                 }
             }
             return false;
-        }
-
-        public byte[] Encrypt(byte[] bytes)
-        {
-            return CryptUtil.Encrypt(bytes, password, salt, iterations);
-        }
-
-        public byte[] Decrypt(byte[] bytes)
-        {
-            return CryptUtil.Decrypt(bytes, password, salt, iterations);
         }
 
         public async UniTask SaveBytes(string filename, byte[] data, bool async)
@@ -119,32 +103,10 @@ namespace TSKT.Files
             var dir = fullPath.Substring(0, index);
             Directory.CreateDirectory(dir);
         }
-
-        public byte[] Serialize<T>(T obj)
-        {
-            return System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(obj));
-        }
-
-        public T Deserialize<T>(byte[] bytes)
-        {
-            var json = System.Text.Encoding.UTF8.GetString(bytes);
-            return JsonUtility.FromJson<T>(json);
-        }
     }
 
-    public class PrefsResolver : IResolver
+    public class PrefsResolver : ILoadSaveResolver
     {
-        readonly string password;
-        readonly byte[] salt;
-        readonly int iterations;
-
-        public PrefsResolver(string password, byte[] salt, int iterations)
-        {
-            this.password = password;
-            this.salt = salt;
-            this.iterations = iterations;
-        }
-
         public bool AnyExist(params string[] filenames)
         {
             foreach (var filename in filenames)
@@ -155,16 +117,6 @@ namespace TSKT.Files
                 }
             }
             return false;
-        }
-
-        public byte[] Encrypt(byte[] bytes)
-        {
-            return CryptUtil.Encrypt(bytes, password, salt, iterations);
-        }
-
-        public byte[] Decrypt(byte[] bytes)
-        {
-            return CryptUtil.Decrypt(bytes, password, salt, iterations);
         }
 
         public UniTask SaveBytes(string filename, byte[] data, bool async)
@@ -182,14 +134,30 @@ namespace TSKT.Files
             }
             return new UniTask<Option<byte[]>>(Option<byte[]>.Empty);
         }
+    }
+
+    public class JsonResolver : ISerializeResolver
+    {
+        readonly string password;
+        readonly byte[] salt;
+        readonly int iterations;
+
+        public JsonResolver(string password, byte[] salt, int iterations)
+        {
+            this.password = password;
+            this.salt = salt;
+            this.iterations = iterations;
+        }
 
         public byte[] Serialize<T>(T obj)
         {
-            return System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(obj));
+            var bytes = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(obj));
+            return CryptUtil.Encrypt(bytes, password, salt, iterations);
         }
 
         public T Deserialize<T>(byte[] bytes)
         {
+            bytes = CryptUtil.Decrypt(bytes, password, salt, iterations);
             var json = System.Text.Encoding.UTF8.GetString(bytes);
             return JsonUtility.FromJson<T>(json);
         }
