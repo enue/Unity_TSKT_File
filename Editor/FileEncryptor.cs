@@ -39,7 +39,7 @@ namespace TSKT
                     return;
                 }
 
-                var bytes = File.ReadAllBytes(path);
+                var bytes = System.IO.File.ReadAllBytes(path);
                 var newPath = EditorUtil.GenerateUniqueAssetPath(Selection.activeObject, "bytes");
 
                 var saltBytes = System.Text.Encoding.UTF8.GetBytes(salt);
@@ -74,7 +74,7 @@ namespace TSKT
                         }
                     }
                 }
-                File.WriteAllBytes(newPath, encryptedBytes);
+                System.IO.File.WriteAllBytes(newPath, encryptedBytes);
                 AssetDatabase.ImportAsset(newPath, ImportAssetOptions.ForceUpdate);
                 Debug.Log("saved : " + newPath);
                 Debug.Log("password : " + password);
