@@ -11,7 +11,7 @@
         {
             "displayName": "IO",
             "description": "Description for file IO",
-            "path": "Samples~/TSKT/FileIO"
+            "path": "Samples~/FileIO"
         }
     ]
 }
