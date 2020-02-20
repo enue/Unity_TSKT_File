@@ -9,7 +9,10 @@ namespace TSKT
 {
     public static class AssetBundleUtil
     {
-        static async UniTask<AssetBundle> LoadAssetBundle(string filename, int priorityOffset, ICryptoTransform decryptor = null, string directory = null)
+        static async UniTask<AssetBundle> LoadAssetBundle(string filename, int priorityOffset,
+            ICryptoTransform decryptor = null,
+            string directory = null,
+            uint crc = 0)
         {
             var assetBundle = AssetBundle.GetAllLoadedAssetBundles().FirstOrDefault(_ => _.name == filename);
             if (!assetBundle)
@@ -26,7 +29,7 @@ namespace TSKT
 
                 if (decryptor == null)
                 {
-                    var createRequest = AssetBundle.LoadFromFileAsync(path);
+                    var createRequest = AssetBundle.LoadFromFileAsync(path, crc);
                     createRequest.priority += priorityOffset;
                     LoadingProgress.Instance.Add(createRequest);
 
@@ -44,7 +47,7 @@ namespace TSKT
                         var bytes = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
                         await UniTask.SwitchToMainThread();
 
-                        var request = AssetBundle.LoadFromMemoryAsync(bytes);
+                        var request = AssetBundle.LoadFromMemoryAsync(bytes, crc);
                         request.priority += priorityOffset;
                         LoadingProgress.Instance.Add(request);
                         await request;
@@ -56,10 +59,13 @@ namespace TSKT
             return assetBundle;
         }
 
-        static async public UniTask<T> LoadAsync<T>(string filename, string assetName, int priorityOffset, ICryptoTransform decryptor = null, string directory = null)
+        static async public UniTask<T> LoadAsync<T>(string filename, string assetName, int priorityOffset,
+            ICryptoTransform decryptor = null,
+            string directory = null,
+            uint crc = 0)
             where T : Object
         {
-            var assetBundle = await LoadAssetBundle(filename, priorityOffset, decryptor, directory);
+            var assetBundle = await LoadAssetBundle(filename, priorityOffset, decryptor: decryptor, directory: directory, crc: crc);
             var assetBundleRequest = assetBundle.LoadAssetAsync<T>(assetName);
             LoadingProgress.Instance.Add(assetBundleRequest);
             await assetBundleRequest;
