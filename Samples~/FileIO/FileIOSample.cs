@@ -52,7 +52,7 @@ namespace TSKT
         {
             var text = await CreateFileIO().LoadStringAsync("foo.txt");
             Debug.Log("load foo.txt");
-            Debug.Log(text.state == LoadResult.State.Succeeded ? text.value : text.state.ToString());
+            Debug.Log(text.Succeeded ? text.value : text.state.ToString());
         }
 
         public void SaveString()
@@ -65,7 +65,7 @@ namespace TSKT
         {
             var text = CreateFileIO().LoadString("foo.txt");
             Debug.Log("load foo.txt");
-            Debug.Log(text.state == LoadResult.State.Succeeded ? text.value : text.state.ToString());
+            Debug.Log(text.Succeeded ? text.value : text.state.ToString());
         }
 
         public async void SaveBytesAsync()
@@ -79,7 +79,7 @@ namespace TSKT
         {
             var bytes = await CreateFileIO().LoadBytesAsync("foo.txt");
             Debug.Log("load foo.txt");
-            Debug.Log(bytes.state == LoadResult.State.Succeeded ? System.Text.Encoding.UTF8.GetString(bytes.value) : bytes.state.ToString());
+            Debug.Log(bytes.Succeeded ? System.Text.Encoding.UTF8.GetString(bytes.value) : bytes.state.ToString());
         }
 
         public void SaveBytes()
@@ -93,7 +93,7 @@ namespace TSKT
         {
             var bytes = CreateFileIO().LoadBytes("foo.txt");
             Debug.Log("load foo.txt");
-            Debug.Log(bytes.state == LoadResult.State.Succeeded ? System.Text.Encoding.UTF8.GetString(bytes.value) : bytes.state.ToString());
+            Debug.Log(bytes.Succeeded ? System.Text.Encoding.UTF8.GetString(bytes.value) : bytes.state.ToString());
         }
 
         public void Save()
@@ -107,7 +107,7 @@ namespace TSKT
         {
             var udon = CreateFileIO().Load<Udon>("udon.bytes");
             Debug.Log("load udon.bytes");
-            Debug.Log(udon.state == LoadResult.State.Succeeded ? udon.value.name : udon.state.ToString());
+            Debug.Log(udon.Succeeded ? udon.value.name : udon.state.ToString());
         }
 
         public async void SaveAsync()
@@ -121,7 +121,7 @@ namespace TSKT
         {
             var udon = await CreateFileIO().LoadAsync<Udon>("udon.bytes");
             Debug.Log("load udon.bytes");
-            Debug.Log(udon.state == LoadResult.State.Succeeded ? udon.value.name : udon.state.ToString());
+            Debug.Log(udon.Succeeded ? udon.value.name : udon.state.ToString());
         }
     }
 }

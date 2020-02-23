@@ -117,9 +117,9 @@ namespace TSKT
         async UniTask<LoadResult<string>> LoadString(string filename, bool async)
         {
             var result = await LoadBytes(filename, async);
-            if (result.state != LoadResult.State.Succeeded)
+            if (!result.Succeeded)
             {
-                return result.CreateInvalid<string>();
+                return result.CreateFailed<string>();
             }
             return new LoadResult<string>(System.Text.Encoding.UTF8.GetString(result.value));
         }
@@ -137,9 +137,9 @@ namespace TSKT
         async UniTask<LoadResult<T>> Load<T>(string filename, bool async)
         {
             var result = await LoadBytes(filename, async);
-            if (result.state != LoadResult.State.Succeeded)
+            if (!result.Succeeded)
             {
-                return result.CreateInvalid<T>();
+                return result.CreateFailed<T>();
             }
             var bytes = result.value;
 
@@ -160,7 +160,7 @@ namespace TSKT
             {
                 Debug.LogError(filename + " broken");
                 Debug.LogException(ex);
-                return LoadResult<T>.FailedDeserialize;
+                return LoadResult<T>.CreateError(ex);
             }
         }
     }

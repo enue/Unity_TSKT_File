@@ -75,7 +75,7 @@ namespace TSKT.Files
 
             if (!System.IO.File.Exists(fullPath))
             {
-                return LoadResult<byte[]>.FileNotFound;
+                return LoadResult<byte[]>.CreateNotFound();
             }
             if (async)
             {
@@ -126,7 +126,7 @@ namespace TSKT.Files
         {
             if (!PlayerPrefs.HasKey(filename))
             {
-                return new UniTask<LoadResult<byte[]>>(LoadResult<byte[]>.FileNotFound);
+                return new UniTask<LoadResult<byte[]>>(LoadResult<byte[]>.CreateNotFound());
             }
             var value = PlayerPrefs.GetString(filename);
             return new UniTask<LoadResult<byte[]>>(new LoadResult<byte[]>(System.Convert.FromBase64String(value)));

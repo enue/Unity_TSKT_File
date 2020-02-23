@@ -9,9 +9,8 @@ namespace TSKT
         public enum State
         {
             Succeeded,
-            FailedOpen,
             NotFound,
-            FailedDeserialize,
+            Error,
         }
     }
 
@@ -19,27 +18,37 @@ namespace TSKT
     {
         public readonly LoadResult.State state;
         public readonly T value;
+        public readonly System.Exception exception;
 
-        public LoadResult(T value, LoadResult.State state)
+        public LoadResult(T value, LoadResult.State state, System.Exception exception)
         {
             this.state = state;
             this.value = value;
+            this.exception = exception;
         }
 
         public LoadResult(T value)
         {
             state = LoadResult.State.Succeeded;
             this.value = value;
+            exception = null;
         }
 
-        public LoadResult<S> CreateInvalid<S>()
+        public LoadResult<S> CreateFailed<S>()
         {
-            Debug.Assert(state != LoadResult.State.Succeeded);
-            return new LoadResult<S>(default, state);
+            Debug.Assert(!Succeeded);
+            return new LoadResult<S>(default, state, exception);
         }
 
-        public static LoadResult<T> FileNotFound => new LoadResult<T>(default, LoadResult.State.NotFound);
-        public static LoadResult<T> FailedOpen => new LoadResult<T>(default, LoadResult.State.FailedOpen);
-        public static LoadResult<T> FailedDeserialize => new LoadResult<T>(default, LoadResult.State.FailedDeserialize);
+        public bool Succeeded => state == LoadResult.State.Succeeded;
+
+        public static LoadResult<T> CreateNotFound(System.Exception ex = null)
+        {
+            return new LoadResult<T>(default, LoadResult.State.NotFound, ex);
+        }
+        public static LoadResult<T> CreateError(System.Exception ex = null)
+        {
+            return new LoadResult<T>(default, LoadResult.State.Error, ex);
+        }
     }
 }
