@@ -139,6 +139,10 @@ namespace TSKT.Files
         readonly byte[] salt;
         readonly int iterations;
 
+        public JsonResolver()
+        {
+        }
+
         public JsonResolver(string password, byte[] salt, int iterations)
         {
             this.password = password;
@@ -149,12 +153,19 @@ namespace TSKT.Files
         public byte[] Serialize<T>(T obj)
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(obj));
-            return CryptUtil.Encrypt(bytes, password, salt, iterations);
+            if (password != null)
+            {
+                bytes = CryptUtil.Encrypt(bytes, password, salt, iterations);
+            }
+            return bytes;
         }
 
         public T Deserialize<T>(byte[] bytes)
         {
-            bytes = CryptUtil.Decrypt(bytes, password, salt, iterations);
+            if (password != null)
+            {
+                bytes = CryptUtil.Decrypt(bytes, password, salt, iterations);
+            }
             var json = System.Text.Encoding.UTF8.GetString(bytes);
             return JsonUtility.FromJson<T>(json);
         }
