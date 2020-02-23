@@ -90,77 +90,77 @@ namespace TSKT
             return Resolver.AnyExist(filenames);
         }
 
-        public Option<byte[]> LoadBytes(string filename)
+        public LoadResult<byte[]> LoadBytes(string filename)
         {
             return LoadBytes(filename, async: false).Result;
         }
-        public UniTask<Option<byte[]>> LoadBytesAsync(string filename)
+        public UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
         {
             return LoadBytes(filename, async: true);
         }
 
-        UniTask<Option<byte[]>> LoadBytes(string filename, bool async)
+        UniTask<LoadResult<byte[]>> LoadBytes(string filename, bool async)
         {
             return Resolver.LoadBytes(filename, async);
         }
 
-        public Option<string> LoadString(string filename)
+        public LoadResult<string> LoadString(string filename)
         {
             return LoadString(filename, async: false).Result;
         }
 
-        public UniTask<Option<string>> LoadStringAsync(string filename)
+        public UniTask<LoadResult<string>> LoadStringAsync(string filename)
         {
             return LoadString(filename, async: true);
         }
 
-        async UniTask<Option<string>> LoadString(string filename, bool async)
+        async UniTask<LoadResult<string>> LoadString(string filename, bool async)
         {
             var result = await LoadBytes(filename, async);
-            if (!result.hasValue)
+            if (result.state != LoadResult.State.Succeeded)
             {
-                return Option<string>.Empty;
+                return result.CreateInvalid<string>();
             }
-            return new Option<string>(System.Text.Encoding.UTF8.GetString(result.value));
+            return new LoadResult<string>(System.Text.Encoding.UTF8.GetString(result.value));
         }
 
-        public Option<T> Load<T>(string filename)
+        public LoadResult<T> Load<T>(string filename)
         {
             return Load<T>(filename, async: false).Result;
         }
 
-        public UniTask<Option<T>> LoadAsync<T>(string filename)
+        public UniTask<LoadResult<T>> LoadAsync<T>(string filename)
         {
             return Load<T>(filename, async: true);
         }
 
-        async UniTask<Option<T>> Load<T>(string filename, bool async)
+        async UniTask<LoadResult<T>> Load<T>(string filename, bool async)
         {
+            var result = await LoadBytes(filename, async);
+            if (result.state != LoadResult.State.Succeeded)
+            {
+                return result.CreateInvalid<T>();
+            }
+            var bytes = result.value;
+
             try
             {
-                var result = await LoadBytes(filename, async);
-                if (!result.hasValue)
-                {
-                    return Option<T>.Empty;
-                }
-
-                var bytes = result.value;
                 if (async)
                 {
                     var t = await UniTask.Run(() => SerialzieResolver.Deserialize<T>(bytes));
-                    return new Option<T>(t);
+                    return new LoadResult<T>(t);
                 }
                 else
                 {
                     var t = SerialzieResolver.Deserialize<T>(bytes);
-                    return new Option<T>(t);
+                    return new LoadResult<T>(t);
                 }
             }
             catch (System.Exception ex)
             {
                 Debug.LogError(filename + " broken");
                 Debug.LogException(ex);
-                return Option<T>.Empty;
+                return LoadResult<T>.FailedDeserialize;
             }
         }
     }

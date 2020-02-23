@@ -7,7 +7,7 @@ namespace TSKT.Files
     public interface ILoadSaveResolver
     {
         bool AnyExist(params string[] filenames);
-        UniTask<Option<byte[]>> LoadBytes(string filename, bool async);
+        UniTask<LoadResult<byte[]>> LoadBytes(string filename, bool async);
         UniTask SaveBytes(string filename, byte[] data, bool async);
     }
 
@@ -69,29 +69,26 @@ namespace TSKT.Files
             }
         }
 
-        public async UniTask<Option<byte[]>> LoadBytes(string filename, bool async)
+        public async UniTask<LoadResult<byte[]>> LoadBytes(string filename, bool async)
         {
             var fullPath = GetPath(filename);
 
-            if (System.IO.File.Exists(fullPath))
+            if (!System.IO.File.Exists(fullPath))
             {
-                if (async)
+                return LoadResult<byte[]>.FileNotFound;
+            }
+            if (async)
+            {
+                using (var fileStream = System.IO.File.OpenRead(fullPath))
                 {
-                    using (var fileStream = System.IO.File.OpenRead(fullPath))
-                    {
-                        var bytes = new byte[fileStream.Length];
-                        await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
-                        return new Option<byte[]>(bytes);
-                    }
-                }
-                else
-                {
-                    return new Option<byte[]>(System.IO.File.ReadAllBytes(fullPath));
+                    var bytes = new byte[fileStream.Length];
+                    await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
+                    return new LoadResult<byte[]>(bytes);
                 }
             }
             else
             {
-                return Option<byte[]>.Empty;
+                return new LoadResult<byte[]>(System.IO.File.ReadAllBytes(fullPath));
             }
         }
 
@@ -125,14 +122,14 @@ namespace TSKT.Files
             return UniTask.CompletedTask;
         }
 
-        public UniTask<Option<byte[]>> LoadBytes(string filename, bool async)
+        public UniTask<LoadResult<byte[]>> LoadBytes(string filename, bool async)
         {
-            var value = PlayerPrefs.GetString(filename, null);
-            if (!string.IsNullOrEmpty(value))
+            if (!PlayerPrefs.HasKey(filename))
             {
-                return new UniTask<Option<byte[]>>(new Option<byte[]>(System.Convert.FromBase64String(value)));
+                return new UniTask<LoadResult<byte[]>>(LoadResult<byte[]>.FileNotFound);
             }
-            return new UniTask<Option<byte[]>>(Option<byte[]>.Empty);
+            var value = PlayerPrefs.GetString(filename);
+            return new UniTask<LoadResult<byte[]>>(new LoadResult<byte[]>(System.Convert.FromBase64String(value)));
         }
     }
 
