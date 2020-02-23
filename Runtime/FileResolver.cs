@@ -152,8 +152,10 @@ namespace TSKT.Files
 
         public byte[] Serialize<T>(T obj)
         {
-            var bytes = System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(obj));
-            if (password != null)
+            var shouldCrypt = password != null;
+            var json = JsonUtility.ToJson(obj, prettyPrint: !shouldCrypt);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            if (shouldCrypt)
             {
                 bytes = CryptUtil.Encrypt(bytes, password, salt, iterations);
             }
