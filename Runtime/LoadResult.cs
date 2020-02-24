@@ -11,6 +11,7 @@ namespace TSKT
             Succeeded,
             NotFound,
             Error,
+            FailedDeserialize,
         }
     }
 
@@ -45,6 +46,10 @@ namespace TSKT
         public static LoadResult<T> CreateNotFound(System.Exception ex = null)
         {
             return new LoadResult<T>(default, LoadResult.State.NotFound, ex);
+        }
+        public static LoadResult<T> CreateFailedDeserialize(System.Exception ex = null)
+        {
+            return new LoadResult<T>(default, LoadResult.State.FailedDeserialize, ex);
         }
         public static LoadResult<T> CreateError(System.Exception ex = null)
         {
