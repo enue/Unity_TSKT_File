@@ -52,17 +52,17 @@ namespace TSKT
             await SaveBytes(filename, bytes, async: async);
         }
 
-        public void Save<T>(string filename, T obj)
+        public byte[] Save<T>(string filename, T obj)
         {
-            Save(filename, obj, async: false).Forget();
+            return Save(filename, obj, async: false).Result;
         }
 
-        public UniTask SaveAsync<T>(string filename, T obj)
+        public UniTask<byte[]> SaveAsync<T>(string filename, T obj)
         {
             return Save(filename, obj, async: true);
         }
 
-        async UniTask Save<T>(string filename, T obj, bool async)
+        async UniTask<byte[]> Save<T>(string filename, T obj, bool async)
         {
             byte[] bytes;
             if (async)
@@ -75,6 +75,7 @@ namespace TSKT
             }
 
             await SaveBytes(filename, bytes, async: async);
+            return bytes;
         }
 
         public bool AnyExist(params string[] filenames)
