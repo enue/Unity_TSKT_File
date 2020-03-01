@@ -22,36 +22,6 @@ namespace TSKT
             SerialzieResolver = serializeResolver;
         }
 
-        public void SaveBytes(string filename, byte[] data)
-        {
-            SaveBytes(filename, data, async: false).Forget();
-        }
-        public UniTask SaveBytesAsync(string filename, byte[] data)
-        {
-            return SaveBytes(filename, data, async: true);
-        }
-
-        UniTask SaveBytes(string filename, byte[] data, bool async)
-        {
-            return Resolver.SaveBytes(filename, data, async);
-        }
-
-        public void SaveString(string filename, string data)
-        {
-            SaveString(filename, data, async: false).Forget();
-        }
-
-        public UniTask SaveStringAsync(string filename, string data)
-        {
-            return SaveString(filename, data, async: true);
-        }
-
-        async UniTask SaveString(string filename, string data, bool async)
-        {
-            var bytes = System.Text.Encoding.UTF8.GetBytes(data);
-            await SaveBytes(filename, bytes, async: async);
-        }
-
         public byte[] Save<T>(string filename, T obj)
         {
             return Save(filename, obj, async: false).Result;
@@ -74,7 +44,7 @@ namespace TSKT
                 bytes = SerialzieResolver.Serialize(obj);
             }
 
-            await SaveBytes(filename, bytes, async: async);
+            await Resolver.SaveBytes(filename, bytes, async);
             return bytes;
         }
 
@@ -89,40 +59,6 @@ namespace TSKT
                 return false;
             }
             return Resolver.AnyExist(filenames);
-        }
-
-        public LoadResult<byte[]> LoadBytes(string filename)
-        {
-            return LoadBytes(filename, async: false).Result;
-        }
-        public UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
-        {
-            return LoadBytes(filename, async: true);
-        }
-
-        UniTask<LoadResult<byte[]>> LoadBytes(string filename, bool async)
-        {
-            return Resolver.LoadBytes(filename, async);
-        }
-
-        public LoadResult<string> LoadString(string filename)
-        {
-            return LoadString(filename, async: false).Result;
-        }
-
-        public UniTask<LoadResult<string>> LoadStringAsync(string filename)
-        {
-            return LoadString(filename, async: true);
-        }
-
-        async UniTask<LoadResult<string>> LoadString(string filename, bool async)
-        {
-            var result = await LoadBytes(filename, async);
-            if (!result.Succeeded)
-            {
-                return result.CreateFailed<string>();
-            }
-            return new LoadResult<string>(System.Text.Encoding.UTF8.GetString(result.value));
         }
 
         public LoadResult<T> Load<T>(string filename)
@@ -140,7 +76,7 @@ namespace TSKT
             byte[] bytes;
             try
             {
-                var result = await LoadBytes(filename, async);
+                var result = await Resolver.LoadBytes(filename, async);
                 if (!result.Succeeded)
                 {
                     return result.CreateFailed<T>();

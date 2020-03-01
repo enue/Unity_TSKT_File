@@ -42,60 +42,6 @@ namespace TSKT
             return new File(ioResolver, serializeResolver);
         }
 
-        public async void SaveStringAsync()
-        {
-            await CreateFileIO().SaveStringAsync("foo.txt", "shami");
-            Debug.Log("save foo.txt : shami");
-        }
-
-        public async void LoadStringAsync()
-        {
-            var text = await CreateFileIO().LoadStringAsync("foo.txt");
-            Debug.Log("load foo.txt");
-            Debug.Log(text.Succeeded ? text.value : text.state.ToString());
-        }
-
-        public void SaveString()
-        {
-            CreateFileIO().SaveString("foo.txt", "momo");
-            Debug.Log("save foo.txt : momo");
-        }
-
-        public void LoadString()
-        {
-            var text = CreateFileIO().LoadString("foo.txt");
-            Debug.Log("load foo.txt");
-            Debug.Log(text.Succeeded ? text.value : text.state.ToString());
-        }
-
-        public async void SaveBytesAsync()
-        {
-            var bytes = System.Text.Encoding.UTF8.GetBytes("mikan");
-            await CreateFileIO().SaveBytesAsync("foo.txt", bytes);
-            Debug.Log("save foo.txt : mikan");
-        }
-
-        public async void LoadBytesAsync()
-        {
-            var bytes = await CreateFileIO().LoadBytesAsync("foo.txt");
-            Debug.Log("load foo.txt");
-            Debug.Log(bytes.Succeeded ? System.Text.Encoding.UTF8.GetString(bytes.value) : bytes.state.ToString());
-        }
-
-        public void SaveBytes()
-        {
-            var bytes = System.Text.Encoding.UTF8.GetBytes("gosenzo");
-            CreateFileIO().SaveBytes("foo.txt", bytes);
-            Debug.Log("save foo.txt : gosenzo");
-        }
-
-        public void LoadBytes()
-        {
-            var bytes = CreateFileIO().LoadBytes("foo.txt");
-            Debug.Log("load foo.txt");
-            Debug.Log(bytes.Succeeded ? System.Text.Encoding.UTF8.GetString(bytes.value) : bytes.state.ToString());
-        }
-
         public void Save()
         {
             var udon = new Udon() { name = "chikuwa" };
