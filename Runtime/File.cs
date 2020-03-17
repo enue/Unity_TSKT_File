@@ -5,9 +5,6 @@ using System.IO;
 using System.Linq;
 using UniRx.Async;
 
-// Async保存は基本的に使わない。処理中にアプリを落とされるとファイルが壊れるからだ
-// 対応としてはバックアップをとる、もしくは手動セーブの場合は使ってもいい。
-
 namespace TSKT
 {
     public class File
@@ -24,27 +21,28 @@ namespace TSKT
 
         public byte[] Save<T>(string filename, T obj)
         {
-            return Save(filename, obj, async: false).Result;
+            var bytes = SerialzieResolver.Serialize(obj);
+            Resolver.SaveBytes(filename, bytes, async: false);
+            return bytes;
         }
 
-        public UniTask<byte[]> SaveAsync<T>(string filename, T obj)
+        /// <summary>
+        /// シリアライズのみ非同期で、ファイルアクセスは同期的に処理する。タスクキルによるファイル破損を気にする必要がない
+        /// </summary>
+        public async UniTask<byte[]> SaveAsync<T>(string filename, T obj)
         {
-            return Save(filename, obj, async: true);
+            var bytes = await UniTask.Run(() => SerialzieResolver.Serialize(obj));
+            Resolver.SaveBytes(filename, bytes, async: false).Forget();
+            return bytes;
         }
 
-        async UniTask<byte[]> Save<T>(string filename, T obj, bool async)
+        /// <summary>
+        /// シリアライズからファイルアクセスまですべて非同期で行う。途中でタスクキルされるとファイルが壊れることがあるので注意。対応済みの場合のみ採用すること
+        /// </summary>
+        public async UniTask<byte[]> SaveWhollyAsync<T>(string filename, T obj)
         {
-            byte[] bytes;
-            if (async)
-            {
-                bytes = await UniTask.Run(() => SerialzieResolver.Serialize(obj));
-            }
-            else
-            {
-                bytes = SerialzieResolver.Serialize(obj);
-            }
-
-            await Resolver.SaveBytes(filename, bytes, async);
+            var bytes = await UniTask.Run(() => SerialzieResolver.Serialize(obj));
+            await Resolver.SaveBytes(filename, bytes, async: true);
             return bytes;
         }
 
