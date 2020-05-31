@@ -1,16 +1,9 @@
-# Unty_TSKT_File
+# install
 
-Packages/manifest.json
+Unity Package Manager
 
-```json
-{
-  "dependencies": {
-    "com.github.enue.tskt_file": "https://github.com/enue/Unity_TSKT_File.git",
-  }
-}
-```
+add package from git url
 
-## require
-UniTask
-
-https://github.com/Cysharp/UniTask
++ `https://github.com/Cysharp/UniTask.git?path=Assets/UniRx.Async`
++ `https://github.com/enue/Unity_TSKT_Editor.git?path=Assets/Package`
++ `https://github.com/enue/Unity_TSKT_File.git?path=Assets/Package`
