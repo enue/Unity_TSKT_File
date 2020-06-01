@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=Assets/UniRx.Async",
-    "com.github.enue.tskt_editor": "https://github.com/enue/Unity_TSKT_Editor.git",
+    "com.github.enue.tskt_editor": "https://github.com/enue/Unity_TSKT_Editor.git?path=Assets/Package",
     "com.unity.collab-proxy": "1.2.16",
     "com.unity.ide.rider": "1.1.4",
     "com.unity.ide.vscode": "1.2.0",
@@ -48,7 +48,7 @@
     },
     "com.github.enue.tskt_editor": {
       "revision": "HEAD",
-      "hash": "ae0ecb194e4ad7286b599c34e4336929c8434a1a"
+      "hash": "598647b5fcc156e5ec9f066caa28fa885e056e1c"
     }
   }
 }
