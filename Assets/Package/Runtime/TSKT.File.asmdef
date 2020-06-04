@@ -1,7 +1,7 @@
 {
     "name": "TSKTFile",
     "references": [
-        "UniRx.Async"
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -10,5 +10,6 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": []
+    "versionDefines": [],
+    "noEngineReferences": false
 }

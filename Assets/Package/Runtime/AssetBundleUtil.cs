@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 using System.Security.Cryptography;
 
 namespace TSKT

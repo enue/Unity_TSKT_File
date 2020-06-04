@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UniRx.Async;
+using Cysharp.Threading.Tasks;
 
 namespace TSKT
 {
@@ -61,7 +61,7 @@ namespace TSKT
 
         public LoadResult<T> Load<T>(string filename)
         {
-            return Load<T>(filename, async: false).Result;
+            return Load<T>(filename, async: false).GetAwaiter().GetResult();
         }
 
         public UniTask<LoadResult<T>> LoadAsync<T>(string filename)
