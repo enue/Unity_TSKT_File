@@ -22,7 +22,7 @@ namespace TSKT
         public byte[] Save<T>(string filename, T obj)
         {
             var bytes = SerialzieResolver.Serialize(obj);
-            Resolver.SaveBytes(filename, bytes, async: false);
+            Resolver.SaveBytes(filename, bytes);
             return bytes;
         }
 
@@ -32,7 +32,7 @@ namespace TSKT
         public async UniTask<byte[]> SaveAsync<T>(string filename, T obj)
         {
             var bytes = await UniTask.Run(() => SerialzieResolver.Serialize(obj));
-            Resolver.SaveBytes(filename, bytes, async: false).Forget();
+            Resolver.SaveBytes(filename, bytes);
             return bytes;
         }
 
@@ -42,7 +42,7 @@ namespace TSKT
         public async UniTask<byte[]> SaveWhollyAsync<T>(string filename, T obj)
         {
             var bytes = await UniTask.Run(() => SerialzieResolver.Serialize(obj));
-            await Resolver.SaveBytes(filename, bytes, async: true);
+            await Resolver.SaveBytesAsync(filename, bytes);
             return bytes;
         }
 
@@ -59,22 +59,12 @@ namespace TSKT
             return Resolver.AnyExist(filenames);
         }
 
-        public LoadResult<T> Load<T>(string filename)
-        {
-            return Load<T>(filename, async: false).GetAwaiter().GetResult();
-        }
-
-        public UniTask<LoadResult<T>> LoadAsync<T>(string filename)
-        {
-            return Load<T>(filename, async: true);
-        }
-
-        async UniTask<LoadResult<T>> Load<T>(string filename, bool async)
+        public async UniTask<LoadResult<T>> LoadAsync<T>(string filename)
         {
             byte[] bytes;
             try
             {
-                var result = await Resolver.LoadBytes(filename, async);
+                var result = await Resolver.LoadBytesAsync(filename);
                 if (!result.Succeeded)
                 {
                     return result.CreateFailed<T>();
@@ -89,16 +79,39 @@ namespace TSKT
 
             try
             {
-                if (async)
+                var t = await UniTask.Run(() => SerialzieResolver.Deserialize<T>(bytes));
+                return new LoadResult<T>(t);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError(filename + " broken");
+                Debug.LogException(ex);
+                return LoadResult<T>.CreateFailedDeserialize(ex);
+            }
+        }
+
+        public LoadResult<T> Load<T>(string filename)
+        {
+            byte[] bytes;
+            try
+            {
+                var result = Resolver.LoadBytes(filename);
+                if (!result.Succeeded)
                 {
-                    var t = await UniTask.Run(() => SerialzieResolver.Deserialize<T>(bytes));
-                    return new LoadResult<T>(t);
+                    return result.CreateFailed<T>();
                 }
-                else
-                {
-                    var t = SerialzieResolver.Deserialize<T>(bytes);
-                    return new LoadResult<T>(t);
-                }
+                bytes = result.value;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+                return LoadResult<T>.CreateError(ex);
+            }
+
+            try
+            {
+                var t = SerialzieResolver.Deserialize<T>(bytes);
+                return new LoadResult<T>(t);
             }
             catch (System.Exception ex)
             {

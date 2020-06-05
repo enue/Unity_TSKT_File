@@ -7,8 +7,10 @@ namespace TSKT.Files
     public interface ILoadSaveResolver
     {
         bool AnyExist(params string[] filenames);
-        UniTask<LoadResult<byte[]>> LoadBytes(string filename, bool async);
-        UniTask SaveBytes(string filename, byte[] data, bool async);
+        UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename);
+        UniTask SaveBytesAsync(string filename, byte[] data);
+        LoadResult<byte[]> LoadBytes(string filename);
+        void SaveBytes(string filename, byte[] data);
     }
 
     public interface ISerializeResolver
@@ -52,24 +54,24 @@ namespace TSKT.Files
             return false;
         }
 
-        public async UniTask SaveBytes(string filename, byte[] data, bool async)
+        public async UniTask SaveBytesAsync(string filename, byte[] data)
         {
             var fullPath = GetPath(filename);
             CreateDictionary(fullPath);
-            if (async)
+            using (var file = System.IO.File.Open(fullPath, FileMode.Create))
             {
-                using (var file = System.IO.File.Open(fullPath, FileMode.Create))
-                {
-                    await file.WriteAsync(data, 0, data.Length).AsUniTask();
-                }
-            }
-            else
-            {
-                System.IO.File.WriteAllBytes(fullPath, data);
+                await file.WriteAsync(data, 0, data.Length).AsUniTask();
             }
         }
 
-        public async UniTask<LoadResult<byte[]>> LoadBytes(string filename, bool async)
+        public void SaveBytes(string filename, byte[] data)
+        {
+            var fullPath = GetPath(filename);
+            CreateDictionary(fullPath);
+            System.IO.File.WriteAllBytes(fullPath, data);
+        }
+
+        public async UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
         {
             var fullPath = GetPath(filename);
 
@@ -77,19 +79,23 @@ namespace TSKT.Files
             {
                 return LoadResult<byte[]>.CreateNotFound();
             }
-            if (async)
+            using (var fileStream = System.IO.File.OpenRead(fullPath))
             {
-                using (var fileStream = System.IO.File.OpenRead(fullPath))
-                {
-                    var bytes = new byte[fileStream.Length];
-                    await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
-                    return new LoadResult<byte[]>(bytes);
-                }
+                var bytes = new byte[fileStream.Length];
+                await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
+                return new LoadResult<byte[]>(bytes);
             }
-            else
+        }
+
+        public LoadResult<byte[]> LoadBytes(string filename)
+        {
+            var fullPath = GetPath(filename);
+
+            if (!System.IO.File.Exists(fullPath))
             {
-                return new LoadResult<byte[]>(System.IO.File.ReadAllBytes(fullPath));
+                return LoadResult<byte[]>.CreateNotFound();
             }
+            return new LoadResult<byte[]>(System.IO.File.ReadAllBytes(fullPath));
         }
 
         static void CreateDictionary(string fullPath)
@@ -116,20 +122,30 @@ namespace TSKT.Files
             return false;
         }
 
-        public UniTask SaveBytes(string filename, byte[] data, bool async)
+        public UniTask SaveBytesAsync(string filename, byte[] data)
         {
-            PlayerPrefs.SetString(filename, System.Convert.ToBase64String(data));
+            SaveBytes(filename, data);
             return UniTask.CompletedTask;
         }
+        public void SaveBytes(string filename, byte[] data)
+        {
+            PlayerPrefs.SetString(filename, System.Convert.ToBase64String(data));
+        }
 
-        public UniTask<LoadResult<byte[]>> LoadBytes(string filename, bool async)
+        public UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
+        {
+            var result = LoadBytes(filename);
+            return UniTask.FromResult(result);
+        }
+
+        public LoadResult<byte[]> LoadBytes(string filename)
         {
             if (!PlayerPrefs.HasKey(filename))
             {
-                return new UniTask<LoadResult<byte[]>>(LoadResult<byte[]>.CreateNotFound());
+                return LoadResult<byte[]>.CreateNotFound();
             }
             var value = PlayerPrefs.GetString(filename);
-            return new UniTask<LoadResult<byte[]>>(new LoadResult<byte[]>(System.Convert.FromBase64String(value)));
+            return new LoadResult<byte[]>(System.Convert.FromBase64String(value));
         }
     }
 
