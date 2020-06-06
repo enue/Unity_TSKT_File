@@ -31,7 +31,7 @@ namespace TSKT
                 {
                     var createRequest = AssetBundle.LoadFromFileAsync(path, crc);
                     createRequest.priority += priorityOffset;
-                    LoadingProgress.Instance.Add(new Files.AsyncOperationProgress(createRequest, 1f));
+                    LoadingProgress.Instance.Add(createRequest);
 
                     await createRequest;
                     assetBundle = createRequest.assetBundle;
@@ -49,7 +49,7 @@ namespace TSKT
 
                         var request = AssetBundle.LoadFromMemoryAsync(bytes, crc);
                         request.priority += priorityOffset;
-                        LoadingProgress.Instance.Add(new Files.AsyncOperationProgress(request, 1f));
+                        LoadingProgress.Instance.Add(request);
                         await request;
 
                         assetBundle = request.assetBundle;
@@ -67,7 +67,7 @@ namespace TSKT
         {
             var assetBundle = await LoadAssetBundle(filename, priorityOffset, decryptor: decryptor, directory: directory, crc: crc);
             var assetBundleRequest = assetBundle.LoadAssetAsync<T>(assetName);
-            LoadingProgress.Instance.Add(new Files.AsyncOperationProgress(assetBundleRequest, 1f));
+            LoadingProgress.Instance.Add(assetBundleRequest);
             await assetBundleRequest;
 
             return assetBundleRequest.asset as T;
@@ -78,7 +78,7 @@ namespace TSKT
         {
             var assetBundle = await LoadAssetBundle(filename, priorityOffset, decryptor, directory);
             var assetBundleRequest = assetBundle.LoadAllAssetsAsync<T>();
-            LoadingProgress.Instance.Add(new Files.AsyncOperationProgress(assetBundleRequest, 1f));
+            LoadingProgress.Instance.Add(assetBundleRequest);
             await assetBundleRequest;
 
             return assetBundleRequest.allAssets.OfType<T>().ToArray();
