@@ -14,7 +14,7 @@ namespace TSKT
             path = path.Normalize(System.Text.NormalizationForm.FormD);
 #endif
             var request = Resources.LoadAsync<T>(path);
-            LoadingProgress.Instance.Add(request);
+            LoadingProgress.Instance.Add(new Files.AsyncOperationProgress(request, 1f));
             await request;
             return request.asset as T;
         }

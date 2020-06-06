@@ -7,22 +7,16 @@ namespace TSKT
     public class LoadingProgress
     {
         static LoadingProgress instance;
-        static public LoadingProgress Instance
-        {
-            get
-            {
-                return instance ?? (instance = new LoadingProgress());
-            }
-        }
+        static public LoadingProgress Instance => instance ?? (instance = new LoadingProgress());
 
-        readonly List<AsyncOperation> operations = new List<AsyncOperation>();
+        readonly List<Files.IProgress> operations = new List<Files.IProgress>();
 
         LoadingProgress()
         {
             // nop;
         }
 
-        public void Add(AsyncOperation operation)
+        public void Add(Files.IProgress operation)
         {
             if (operations.TrueForAll(_ => _.isDone))
             {
@@ -53,14 +47,7 @@ namespace TSKT
 
             foreach (var it in operations)
             {
-                if (it is ResourceRequest)
-                {
-                    totalProgress += it.progress;
-                }
-                else
-                {
-                    totalProgress += it.progress / 0.9f;
-                }
+                totalProgress += it.progress;
             }
 
             return totalProgress / operations.Count;
