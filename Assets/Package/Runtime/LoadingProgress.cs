@@ -15,21 +15,21 @@ namespace TSKT
             }
         }
 
-        readonly List<AsyncOperation> operations = new List<AsyncOperation>();
+        readonly List<(AsyncOperation operation, float max)> operations = new List<(AsyncOperation, float)>();
 
         LoadingProgress()
         {
             // nop;
         }
 
-        public void Add(AsyncOperation operation)
+        public void Add(AsyncOperation operation, float max = 1f)
         {
-            if (operations.TrueForAll(_ => _.isDone))
+            if (operations.TrueForAll(_ => _.operation.isDone))
             {
                 operations.Clear();
             }
 
-            operations.Add(operation);
+            operations.Add((operation, max));
         }
 
         public float GetProgress()
@@ -39,7 +39,7 @@ namespace TSKT
                 return 1f;
             }
 
-            if (operations.TrueForAll(_ => _.isDone))
+            if (operations.TrueForAll(_ => _.operation.isDone))
             {
                 operations.Clear();
             }
@@ -51,16 +51,9 @@ namespace TSKT
 
             var totalProgress = 0f;
 
-            foreach (var it in operations)
+            foreach (var (operation, max) in operations)
             {
-                if (it is ResourceRequest)
-                {
-                    totalProgress += it.progress;
-                }
-                else
-                {
-                    totalProgress += it.progress / 0.9f;
-                }
+                totalProgress += Mathf.Clamp01(operation.progress / max);
             }
 
             return totalProgress / operations.Count;
