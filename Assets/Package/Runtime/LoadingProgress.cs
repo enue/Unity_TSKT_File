@@ -74,7 +74,7 @@ namespace TSKT
             }
             fixedTotalProgress = totalProgress;
 
-            Add(item);
+            operations.Add(item);
         }
 
         float GetProgress(out float totalProgress)
