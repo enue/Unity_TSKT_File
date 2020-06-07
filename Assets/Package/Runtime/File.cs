@@ -55,6 +55,9 @@ namespace TSKT
             try
             {
                 var bytes = await UniTask.Run(() => SerialzieResolver.Serialize(obj));
+
+                progress.Report(0.5f);
+
                 await Resolver.SaveBytesAsync(filename, bytes);
                 return bytes;
             }
@@ -98,6 +101,8 @@ namespace TSKT
                     Debug.LogException(ex);
                     return LoadResult<T>.CreateError(ex);
                 }
+
+                progress.Report(0.5f);
 
                 try
                 {
