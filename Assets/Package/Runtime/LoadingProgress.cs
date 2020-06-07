@@ -1,21 +1,18 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 namespace TSKT
 {
     public class LoadingProgress
     {
         static LoadingProgress instance;
-        static public LoadingProgress Instance
-        {
-            get
-            {
-                return instance ?? (instance = new LoadingProgress());
-            }
-        }
+        static public LoadingProgress Instance => instance ?? (instance = new LoadingProgress());
 
         readonly List<(AsyncOperation operation, float max)> operations = new List<(AsyncOperation, float)>();
+        float fixedTotalProgress = 0f;
+        float fixedProgress = 0f;
 
         LoadingProgress()
         {
@@ -24,39 +21,42 @@ namespace TSKT
 
         public void Add(AsyncOperation operation, float max = 1f)
         {
-            if (operations.TrueForAll(_ => _.operation.isDone))
+            fixedProgress = GetProgress(out var totalProgress);
+            if (fixedProgress == 1f)
             {
-                operations.Clear();
+                fixedProgress = 0f;
             }
+            fixedTotalProgress = totalProgress;
 
             operations.Add((operation, max));
         }
 
-        public float GetProgress()
+        float GetProgress(out float totalProgress)
         {
             if (operations.Count == 0)
             {
+                totalProgress = 0f;
                 return 1f;
             }
-
             if (operations.TrueForAll(_ => _.operation.isDone))
             {
                 operations.Clear();
-            }
 
-            if (operations.Count == 0)
-            {
+                totalProgress = 0f;
                 return 1f;
             }
 
-            var totalProgress = 0f;
+            totalProgress = operations.Sum(_ => Mathf.Clamp01(_.operation.progress / _.max));
 
-            foreach (var (operation, max) in operations)
-            {
-                totalProgress += Mathf.Clamp01(operation.progress / max);
-            }
+            var min = fixedTotalProgress;
+            var max = operations.Count;
+            var t = Mathf.InverseLerp(min, max, totalProgress);
+            return Mathf.Lerp(fixedProgress, 1f, t);
+        }
 
-            return totalProgress / operations.Count;
+        public float GetProgress()
+        {
+            return GetProgress(out _);
         }
     }
 }
