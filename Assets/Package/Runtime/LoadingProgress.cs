@@ -27,7 +27,7 @@ namespace TSKT
             public bool IsDone => operation.isDone;
         }
 
-        public class ProgressItem : System.IProgress<float>, IItem
+        class ProgressItem : System.IProgress<float>, IItem
         {
             public float Progress { get; private set; }
             public bool IsDone => Progress >= 1f;
