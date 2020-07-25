@@ -56,6 +56,10 @@ namespace TSKT.Files
 
         public async UniTask SaveBytesAsync(string filename, byte[] data)
         {
+#if UNITY_WEBGL
+            SaveBytes(filename, data);
+            return;
+#endif
             var fullPath = GetPath(filename);
             CreateDictionary(fullPath);
             using (var file = System.IO.File.Open(fullPath, FileMode.Create))
@@ -73,6 +77,9 @@ namespace TSKT.Files
 
         public async UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
         {
+#if UNITY_WEBGL
+            return LoadBytes(filename);
+#endif
             var fullPath = GetPath(filename);
 
             if (!System.IO.File.Exists(fullPath))
