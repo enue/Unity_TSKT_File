@@ -14,7 +14,16 @@ namespace TSKT
             where T : Object
         {
             var request = Addressables.LoadAssetAsync<T>(key);
-            return await request.Task.AsUniTask();
+            var progress =  LoadingProgress.Instance.Add();
+            return await request.ToUniTask(progress);
+        }
+
+        static async public UniTask<T> LoadAsync<T>(AssetReferenceT<T> key)
+            where T : Object
+        {
+            var request = key.LoadAssetAsync();
+            var progress = LoadingProgress.Instance.Add();
+            return await request.ToUniTask(progress);
         }
     }
 }
