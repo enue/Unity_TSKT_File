@@ -14,8 +14,7 @@ namespace TSKT
             where T : Object
         {
             var request = Addressables.LoadAssetAsync<T>(key);
-            var progress = LoadingProgress.Instance.Add();
-            return await request.ToUniTask(Progress.Create<float>(_ => progress.Report(_ / 100f)));
+            return await request.Task.AsUniTask();
         }
     }
 }

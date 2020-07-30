@@ -5,14 +5,14 @@
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "1bec3f507ebe08cfecdf91bcfeb8a1a15319fc03"
+      "hash": "6ec0ed8d6132a36eb99a7097d85702cc3c052ff4"
     },
     "com.github.enue.tskt_editor": {
       "version": "https://github.com/enue/Unity_TSKT_Editor.git?path=Assets/Package",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "598647b5fcc156e5ec9f066caa28fa885e056e1c"
+      "hash": "e6dd443e0f609870bf66ff46fa8a3ec3fb716d1a"
     },
     "com.unity.addressables": {
       "version": "1.8.4",
@@ -71,7 +71,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.test-framework": {
-      "version": "1.1.14",
+      "version": "1.1.16",
       "depth": 0,
       "source": "registry",
       "dependencies": {
