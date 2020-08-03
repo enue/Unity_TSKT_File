@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -21,6 +22,8 @@ namespace TSKT.Files
 
     public class DefaultResolver : ILoadSaveResolver
     {
+        readonly Dictionary<string, byte[]> cache = new Dictionary<string, byte[]>();
+
         readonly string directory;
 
         public DefaultResolver(string directory)
@@ -46,10 +49,21 @@ namespace TSKT.Files
         {
             foreach (var filename in filenames)
             {
+                if (cache.TryGetValue(filename, out var file))
+                {
+                    if (file != null)
+                    {
+                        return true;
+                    }
+                }
+            }
+            foreach (var filename in filenames)
+            {
                 if (System.IO.File.Exists(GetPath(filename)))
                 {
                     return true;
                 }
+                cache[filename] = null;
             }
             return false;
         }
@@ -60,6 +74,8 @@ namespace TSKT.Files
             SaveBytes(filename, data);
             return;
 #endif
+            cache[filename] = data;
+
             var fullPath = GetPath(filename);
             CreateDictionary(fullPath);
             using (var file = System.IO.File.Open(fullPath, FileMode.Create))
@@ -73,6 +89,8 @@ namespace TSKT.Files
             var fullPath = GetPath(filename);
             CreateDictionary(fullPath);
             System.IO.File.WriteAllBytes(fullPath, data);
+
+            cache[filename] = data;
         }
 
         public async UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
@@ -80,29 +98,52 @@ namespace TSKT.Files
 #if UNITY_WEBGL
             return LoadBytes(filename);
 #endif
+            if (cache.TryGetValue(filename, out var cachedFile))
+            {
+                if (cachedFile == null)
+                {
+                    return LoadResult<byte[]>.CreateNotFound();
+                }
+                return new LoadResult<byte[]>(cachedFile);
+            }
+
             var fullPath = GetPath(filename);
 
             if (!System.IO.File.Exists(fullPath))
             {
+                cache[filename] = null;
                 return LoadResult<byte[]>.CreateNotFound();
             }
             using (var fileStream = System.IO.File.OpenRead(fullPath))
             {
                 var bytes = new byte[fileStream.Length];
                 await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
+                cache[filename] = bytes;
                 return new LoadResult<byte[]>(bytes);
             }
         }
 
         public LoadResult<byte[]> LoadBytes(string filename)
         {
+            if (cache.TryGetValue(filename, out var cachedFile))
+            {
+                if (cachedFile == null)
+                {
+                    return LoadResult<byte[]>.CreateNotFound();
+                }
+                return new LoadResult<byte[]>(cachedFile);
+            }
+
             var fullPath = GetPath(filename);
 
             if (!System.IO.File.Exists(fullPath))
             {
+                cache[filename] = null;
                 return LoadResult<byte[]>.CreateNotFound();
             }
-            return new LoadResult<byte[]>(System.IO.File.ReadAllBytes(fullPath));
+            var bytes = System.IO.File.ReadAllBytes(fullPath);
+            cache[filename] = bytes;
+            return new LoadResult<byte[]>(bytes);
         }
 
         static void CreateDictionary(string fullPath)
