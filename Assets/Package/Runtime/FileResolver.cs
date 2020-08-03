@@ -23,6 +23,7 @@ namespace TSKT.Files
     public class DefaultResolver : ILoadSaveResolver
     {
         readonly Dictionary<string, byte[]> cache = new Dictionary<string, byte[]>();
+        int processCount = 0;
 
         readonly string directory;
 
@@ -78,10 +79,14 @@ namespace TSKT.Files
 
             var fullPath = GetPath(filename);
             CreateDictionary(fullPath);
+
+            await UniTask.WaitWhile(() => processCount > 0);
+            ++processCount;
             using (var file = System.IO.File.Open(fullPath, FileMode.Create))
             {
                 await file.WriteAsync(data, 0, data.Length).AsUniTask();
             }
+            --processCount;
         }
 
         public void SaveBytes(string filename, byte[] data)
@@ -114,6 +119,8 @@ namespace TSKT.Files
                 cache[filename] = null;
                 return LoadResult<byte[]>.CreateNotFound();
             }
+            await UniTask.WaitWhile(() => processCount > 0);
+            ++processCount;
             using (var fileStream = System.IO.File.OpenRead(fullPath))
             {
                 var bytes = new byte[fileStream.Length];
@@ -121,6 +128,7 @@ namespace TSKT.Files
                 cache[filename] = bytes;
                 return new LoadResult<byte[]>(bytes);
             }
+            --processCount;
         }
 
         public LoadResult<byte[]> LoadBytes(string filename)
