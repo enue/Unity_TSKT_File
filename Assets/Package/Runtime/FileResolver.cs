@@ -82,11 +82,17 @@ namespace TSKT.Files
 
             await UniTask.WaitWhile(() => processCount > 0);
             ++processCount;
-            using (var file = System.IO.File.Open(fullPath, FileMode.Create))
+            try
             {
-                await file.WriteAsync(data, 0, data.Length).AsUniTask();
+                using (var file = System.IO.File.Open(fullPath, FileMode.Create))
+                {
+                    await file.WriteAsync(data, 0, data.Length).AsUniTask();
+                }
             }
-            --processCount;
+            finally
+            {
+                --processCount;
+            }
         }
 
         public void SaveBytes(string filename, byte[] data)
@@ -121,14 +127,21 @@ namespace TSKT.Files
             }
             await UniTask.WaitWhile(() => processCount > 0);
             ++processCount;
-            using (var fileStream = System.IO.File.OpenRead(fullPath))
+            try
             {
-                var bytes = new byte[fileStream.Length];
-                await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
-                cache[filename] = bytes;
-                return new LoadResult<byte[]>(bytes);
+                using (var fileStream = System.IO.File.OpenRead(fullPath))
+                {
+                    var bytes = new byte[fileStream.Length];
+                    await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
+                    cache[filename] = bytes;
+                    --processCount;
+                    return new LoadResult<byte[]>(bytes);
+                }
             }
-            --processCount;
+            finally
+            {
+                --processCount;
+            }
         }
 
         public LoadResult<byte[]> LoadBytes(string filename)
