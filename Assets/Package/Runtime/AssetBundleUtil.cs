@@ -42,6 +42,15 @@ namespace TSKT
                 operation.priority += priorityOffset;
                 LoadingProgress.Instance.Add(operation);
                 await operation;
+                if (webRequest.isHttpError)
+                {
+                    return null;
+                }
+                if (webRequest.isNetworkError)
+                {
+                    return null;
+                }
+
                 return UnityEngine.Networking.DownloadHandlerAssetBundle.GetContent(request);
 #else
                 var createRequest = AssetBundle.LoadFromFileAsync(path, crc);
@@ -72,13 +81,30 @@ namespace TSKT
                         operation.priority += priorityOffset;
                         LoadingProgress.Instance.Add(operation);
                         await operation;
+
+                        if (webRequest.isHttpError)
+                        {
+                            return null;
+                        }
+                        if (webRequest.isNetworkError)
+                        {
+                            return null;
+                        }
+
                         encryptedBytes = webRequest.downloadHandler.data;
                     }
 #else
-                    using (var file = System.IO.File.OpenRead(path))
+                    try
                     {
-                        encryptedBytes = new byte[file.Length];
-                        await file.ReadAsync(encryptedBytes, 0, encryptedBytes.Length).AsUniTask();
+                        using (var file = System.IO.File.OpenRead(path))
+                        {
+                            encryptedBytes = new byte[file.Length];
+                            await file.ReadAsync(encryptedBytes, 0, encryptedBytes.Length).AsUniTask();
+                        }
+                    }
+                    catch (System.IO.FileNotFoundException)
+                    {
+                        return null;
                     }
 #endif
 #if UNITY_WEBGL
@@ -108,6 +134,10 @@ namespace TSKT
             where T : Object
         {
             var assetBundle = await LoadAssetBundle(filename, priorityOffset, decryptor: decryptor, directory: directory, crc: crc);
+            if (!assetBundle)
+            {
+                return null;
+            }
             var assetBundleRequest = assetBundle.LoadAssetAsync<T>(assetName);
             LoadingProgress.Instance.Add(assetBundleRequest);
             await assetBundleRequest;
@@ -119,6 +149,10 @@ namespace TSKT
             where T : Object
         {
             var assetBundle = await LoadAssetBundle(filename, priorityOffset, decryptor, directory);
+            if (!assetBundle)
+            {
+                return null;
+            }
             var assetBundleRequest = assetBundle.LoadAllAssetsAsync<T>();
             LoadingProgress.Instance.Add(assetBundleRequest);
             await assetBundleRequest;
