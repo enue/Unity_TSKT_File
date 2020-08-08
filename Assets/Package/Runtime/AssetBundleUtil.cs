@@ -36,12 +36,21 @@ namespace TSKT
 
             if (decryptor == null)
             {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                var request = UnityEngine.Networking.UnityWebRequestAssetBundle.GetAssetBundle(path, crc);
+                var operation = request.SendWebRequest();
+                operation.priority += priorityOffset;
+                LoadingProgress.Instance.Add(operation);
+                await operation;
+                return UnityEngine.Networking.DownloadHandlerAssetBundle.GetContent(request);
+#else
                 var createRequest = AssetBundle.LoadFromFileAsync(path, crc);
                 createRequest.priority += priorityOffset;
                 LoadingProgress.Instance.Add(createRequest);
 
                 await createRequest;
                 return createRequest.assetBundle;
+#endif
             }
             else
             {
@@ -54,22 +63,36 @@ namespace TSKT
                 ++processCount;
                 try
                 {
+                    byte[] encryptedBytes;
+
+#if (UNITY_ANDROID || UNITY_WEBGL) && !UNITY_EDITOR
+                    using (var webRequest = UnityEngine.Networking.UnityWebRequest.Get(path))
+                    {
+                        var operation = webRequest.SendWebRequest();
+                        operation.priority += priorityOffset;
+                        LoadingProgress.Instance.Add(operation);
+                        await operation;
+                        encryptedBytes = webRequest.downloadHandler.data;
+                    }
+#else
                     using (var file = System.IO.File.OpenRead(path))
                     {
-                        var encryptedBytes = new byte[file.Length];
+                        encryptedBytes = new byte[file.Length];
                         await file.ReadAsync(encryptedBytes, 0, encryptedBytes.Length).AsUniTask();
-
-                        await UniTask.SwitchToThreadPool();
-                        var bytes = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
-                        await UniTask.SwitchToMainThread();
-
-                        var request = AssetBundle.LoadFromMemoryAsync(bytes, crc);
-                        request.priority += priorityOffset;
-                        LoadingProgress.Instance.Add(request);
-                        await request;
-
-                        return request.assetBundle;
                     }
+#endif
+#if UNITY_WEBGL
+                    var bytes = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
+#else
+                    var bytes = await UniTask.Run(() => decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length));
+#endif
+
+                    var request = AssetBundle.LoadFromMemoryAsync(bytes, crc);
+                    request.priority += priorityOffset;
+                    LoadingProgress.Instance.Add(request);
+                    await request;
+
+                    return request.assetBundle;
                 }
                 finally
                 {
