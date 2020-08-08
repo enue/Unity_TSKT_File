@@ -9,34 +9,50 @@ namespace TSKT
 {
     public static class AssetBundleUtil
     {
+        static int processCount;
+
         static async UniTask<AssetBundle> LoadAssetBundle(string filename, int priorityOffset,
             ICryptoTransform decryptor = null,
             string directory = null,
             uint crc = 0)
         {
-            var assetBundle = AssetBundle.GetAllLoadedAssetBundles().FirstOrDefault(_ => _.name == filename);
-            if (!assetBundle)
             {
-                string path;
-                if (directory == null)
+                var assetBundle = AssetBundle.GetAllLoadedAssetBundles().FirstOrDefault(_ => _.name == filename);
+                if (assetBundle)
                 {
-                    path = filename;
+                    return assetBundle;
                 }
-                else
+            }
+
+            string path;
+            if (directory == null)
+            {
+                path = filename;
+            }
+            else
+            {
+                path = System.IO.Path.Combine(directory, filename);
+            }
+
+            if (decryptor == null)
+            {
+                var createRequest = AssetBundle.LoadFromFileAsync(path, crc);
+                createRequest.priority += priorityOffset;
+                LoadingProgress.Instance.Add(createRequest);
+
+                await createRequest;
+                return createRequest.assetBundle;
+            }
+            else
+            {
+                if (processCount > 0)
                 {
-                    path = System.IO.Path.Combine(directory, filename);
+                    await UniTask.WaitWhile(() => processCount > 0);
+                    return await LoadAssetBundle(filename, priorityOffset: priorityOffset, decryptor: decryptor, directory: directory, crc: crc);
                 }
 
-                if (decryptor == null)
-                {
-                    var createRequest = AssetBundle.LoadFromFileAsync(path, crc);
-                    createRequest.priority += priorityOffset;
-                    LoadingProgress.Instance.Add(createRequest);
-
-                    await createRequest;
-                    assetBundle = createRequest.assetBundle;
-                }
-                else
+                ++processCount;
+                try
                 {
                     using (var file = System.IO.File.OpenRead(path))
                     {
@@ -52,11 +68,14 @@ namespace TSKT
                         LoadingProgress.Instance.Add(request);
                         await request;
 
-                        assetBundle = request.assetBundle;
+                        return request.assetBundle;
                     }
                 }
+                finally
+                {
+                    --processCount;
+                }
             }
-            return assetBundle;
         }
 
         static async public UniTask<T> LoadAsync<T>(string filename, string assetName, int priorityOffset,
