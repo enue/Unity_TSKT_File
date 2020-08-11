@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using UniRx.Async;
 using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 
 namespace TSKT
 {
