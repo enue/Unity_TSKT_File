@@ -107,6 +107,10 @@ namespace TSKT
                             await file.ReadAsync(encryptedBytes, 0, encryptedBytes.Length).AsUniTask();
                         }
                     }
+                    catch (System.IO.DirectoryNotFoundException ex)
+                    {
+                        return LoadResult<AssetBundle>.CreateNotFound(ex);
+                    }
                     catch (System.IO.FileNotFoundException ex)
                     {
                         return LoadResult<AssetBundle>.CreateNotFound(ex);

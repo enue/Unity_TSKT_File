@@ -121,19 +121,26 @@ namespace TSKT.Files
                     return new LoadResult<byte[]>(cachedFile);
                 }
 
-                if (!System.IO.File.Exists(fullPath))
+                try
+                {
+                    using (var fileStream = System.IO.File.OpenRead(fullPath))
+                    {
+                        var bytes = new byte[fileStream.Length];
+                        await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
+                        cache[fullPath] = bytes;
+                        --processCount;
+                        return new LoadResult<byte[]>(bytes);
+                    }
+                }
+                catch (DirectoryNotFoundException ex)
                 {
                     cache[fullPath] = null;
-                    return LoadResult<byte[]>.CreateNotFound();
+                    return LoadResult<byte[]>.CreateNotFound(ex);
                 }
-
-                using (var fileStream = System.IO.File.OpenRead(fullPath))
+                catch (FileNotFoundException ex)
                 {
-                    var bytes = new byte[fileStream.Length];
-                    await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
-                    cache[fullPath] = bytes;
-                    --processCount;
-                    return new LoadResult<byte[]>(bytes);
+                    cache[fullPath] = null;
+                    return LoadResult<byte[]>.CreateNotFound(ex);
                 }
             }
             finally
@@ -155,14 +162,22 @@ namespace TSKT.Files
                 return new LoadResult<byte[]>(cachedFile);
             }
 
-            if (!System.IO.File.Exists(fullPath))
+            try
+            {
+                var bytes = System.IO.File.ReadAllBytes(fullPath);
+                cache[fullPath] = bytes;
+                return new LoadResult<byte[]>(bytes);
+            }
+            catch (DirectoryNotFoundException ex)
             {
                 cache[fullPath] = null;
-                return LoadResult<byte[]>.CreateNotFound();
+                return LoadResult<byte[]>.CreateNotFound(ex);
             }
-            var bytes = System.IO.File.ReadAllBytes(fullPath);
-            cache[fullPath] = bytes;
-            return new LoadResult<byte[]>(bytes);
+            catch (FileNotFoundException ex)
+            {
+                cache[fullPath] = null;
+                return LoadResult<byte[]>.CreateNotFound(ex);
+            }
         }
 
         static void CreateDictionary(string fullPath)
