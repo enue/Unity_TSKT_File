@@ -5,7 +5,7 @@
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "6ec0ed8d6132a36eb99a7097d85702cc3c052ff4"
+      "hash": "e82353b4d907f332b2f967e1b2352b3a5040b19d"
     },
     "com.github.enue.tskt_editor": {
       "version": "https://github.com/enue/Unity_TSKT_Editor.git?path=Assets/Package",
@@ -27,7 +27,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.collab-proxy": {
-      "version": "1.3.8",
+      "version": "1.3.9",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
@@ -102,7 +102,8 @@
       "depth": 0,
       "source": "builtin",
       "dependencies": {
-        "com.unity.modules.ui": "1.0.0"
+        "com.unity.modules.ui": "1.0.0",
+        "com.unity.modules.imgui": "1.0.0"
       }
     },
     "com.unity.modules.ai": {
