@@ -5,6 +5,8 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using System.Security.Cryptography;
 
+#if TSKT_FILE_ASSETBUNDLE_SUPPORT
+
 namespace TSKT
 {
     public static class AssetBundleUtil
@@ -182,3 +184,5 @@ namespace TSKT
         }
     }
 }
+
+#endif

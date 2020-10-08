@@ -18,6 +18,11 @@
             "name": "com.unity.addressables",
             "expression": "",
             "define": "TSKT_FILE_ADDRESSABLE_SUPPORT"
+        },
+        {
+            "name": "com.unity.modules.assetbundle",
+            "expression": "",
+            "define": "TSKT_FILE_ASSETBUNDLE_SUPPORT"
         }
     ],
     "noEngineReferences": false
