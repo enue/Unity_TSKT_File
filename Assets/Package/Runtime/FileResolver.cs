@@ -255,6 +255,7 @@ namespace TSKT.Files
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
             if (shouldCrypt)
             {
+                bytes = CompressUtil.Compress(bytes);
                 bytes = CryptUtil.Encrypt(bytes, password, salt, iterations);
             }
             return bytes;
@@ -265,6 +266,7 @@ namespace TSKT.Files
             if (password != null)
             {
                 bytes = CryptUtil.Decrypt(bytes, password, salt, iterations);
+                bytes = CompressUtil.Decompress(bytes);
             }
             var json = System.Text.Encoding.UTF8.GetString(bytes);
             return JsonUtility.FromJson<T>(json);

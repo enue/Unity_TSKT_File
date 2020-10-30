@@ -46,8 +46,8 @@ namespace TSKT
                 byte[] encryptedBytes;
                 if (compress)
                 {
-                    encryptedBytes = CryptUtil.Encrypt(bytes, password, saltBytes, iterations);
-                    var t = CryptUtil.Decrypt(encryptedBytes, password, saltBytes, iterations);
+                    encryptedBytes = CryptUtil.Encrypt(CompressUtil.Compress(bytes), password, saltBytes, iterations);
+                    var t = CompressUtil.Decompress(CryptUtil.Decrypt(encryptedBytes, password, saltBytes, iterations));
                     if (!bytes.SequenceEqual(t))
                     {
                         Debug.LogError("error : can't decrypt");
@@ -56,22 +56,12 @@ namespace TSKT
                 }
                 else
                 {
-                    using (var rijndael = CryptUtil.CreateRijndael(password, saltBytes, iterations))
+                    encryptedBytes = CryptUtil.Encrypt(bytes, password, saltBytes, iterations);
+                    var t = CryptUtil.Decrypt(encryptedBytes, password, saltBytes, iterations);
+                    if (!bytes.SequenceEqual(t))
                     {
-                        using (var encryptor = rijndael.CreateEncryptor())
-                        {
-                            encryptedBytes = encryptor.TransformFinalBlock(bytes, 0, bytes.Length);
-
-                            using (var decryptor = rijndael.CreateDecryptor())
-                            {
-                                var t = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
-                                if (!bytes.SequenceEqual(t))
-                                {
-                                    Debug.LogError("error : can't decrypt");
-                                    return;
-                                }
-                            }
-                        }
+                        Debug.LogError("error : can't decrypt");
+                        return;
                     }
                 }
                 System.IO.File.WriteAllBytes(newPath, encryptedBytes);

@@ -35,8 +35,7 @@ namespace TSKT
 
         static public byte[] Encrypt(byte[] bytes, ICryptoTransform encryptor)
         {
-            var compressedBytes = Compress(bytes);
-            return encryptor.TransformFinalBlock(compressedBytes, 0, compressedBytes.Length);
+            return encryptor.TransformFinalBlock(bytes, 0, bytes.Length);
         }
 
         static public byte[] Encrypt(byte[] bytes, string password, byte[] salt, int iterations)
@@ -52,8 +51,7 @@ namespace TSKT
 
         static public byte[] Decrypt(byte[] encryptedBytes, ICryptoTransform decryptor)
         {
-            var compressedBytes = decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
-            return Decompress(compressedBytes);
+            return decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
         }
 
         static public byte[] Decrypt(byte[] encryptedBytes, string key, byte[] salt, int iterations)
@@ -66,7 +64,10 @@ namespace TSKT
                 }
             }
         }
+    }
 
+    public static class CompressUtil
+    {
         static public byte[] Compress(byte[] bytes)
         {
             using (var compressed = new MemoryStream())

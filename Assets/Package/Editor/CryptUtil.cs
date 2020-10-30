@@ -13,8 +13,8 @@ namespace TSKT.Tests
         public void Crypt(string data, string password, string salt, int iterations)
         {
             var bytesSalt = Encoding.UTF8.GetBytes(salt);
-            var encData = TSKT.CryptUtil.Encrypt(Encoding.UTF8.GetBytes(data), password, bytesSalt, iterations);
-            var decData = TSKT.CryptUtil.Decrypt(encData, password, bytesSalt, iterations);
+            var encData = TSKT.CryptUtil.Encrypt(CompressUtil.Compress(Encoding.UTF8.GetBytes(data)), password, bytesSalt, iterations);
+            var decData = CompressUtil.Decompress(TSKT.CryptUtil.Decrypt(encData, password, bytesSalt, iterations));
             Assert.AreEqual(data, decData);
         }
     }
