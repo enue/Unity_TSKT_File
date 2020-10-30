@@ -10,7 +10,7 @@ namespace TSKT
     public class File
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
-        public static string AppDirectory => Application.persistentDataPath
+        public static string AppDirectory => Application.persistentDataPath;
 #else
         readonly static public string AppDirectory = Path.GetDirectoryName(Application.dataPath);
 #endif
