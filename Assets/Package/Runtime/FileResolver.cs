@@ -236,6 +236,7 @@ namespace TSKT.Files
         readonly string password;
         readonly byte[] salt;
         readonly int iterations;
+        readonly bool compress;
 
         public JsonResolver()
         {
@@ -246,16 +247,25 @@ namespace TSKT.Files
             this.password = password;
             this.salt = salt;
             this.iterations = iterations;
+            compress = true;
+        }
+
+        public JsonResolver(bool compress)
+        {
+            this.compress = compress;
         }
 
         public byte[] Serialize<T>(T obj)
         {
             var shouldCrypt = password != null;
-            var json = JsonUtility.ToJson(obj, prettyPrint: !shouldCrypt);
+            var json = JsonUtility.ToJson(obj, prettyPrint: !compress);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-            if (shouldCrypt)
+            if (compress)
             {
                 bytes = CompressUtil.Compress(bytes);
+            }
+            if (shouldCrypt)
+            {
                 bytes = CryptUtil.Encrypt(bytes, password, salt, iterations);
             }
             return bytes;
@@ -266,6 +276,9 @@ namespace TSKT.Files
             if (password != null)
             {
                 bytes = CryptUtil.Decrypt(bytes, password, salt, iterations);
+            }
+            if (compress)
+            {
                 bytes = CompressUtil.Decompress(bytes);
             }
             var json = System.Text.Encoding.UTF8.GetString(bytes);
