@@ -9,7 +9,11 @@ namespace TSKT
 {
     public class File
     {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        public static string AppDirectory => Application.persistentDataPath
+#else
         readonly static public string AppDirectory = Path.GetDirectoryName(Application.dataPath);
+#endif
         public Files.ILoadSaveResolver Resolver { get; }
         public Files.ISerializeResolver SerialzieResolver { get; }
 
