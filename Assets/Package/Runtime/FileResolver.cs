@@ -25,25 +25,25 @@ namespace TSKT.Files
         static readonly Dictionary<string, byte[]> cache = new Dictionary<string, byte[]>();
         static int processCount = 0;
 
-        readonly string directory;
+        public readonly string directory;
 
-        public DefaultResolver(string directory)
+        public DefaultResolver(string directory, bool userFolder = false)
         {
-            this.directory = directory;
+            var dir = userFolder ? Application.persistentDataPath : File.AppDirectory;
+
+            if (directory == null)
+            {
+                this.directory = dir;
+            }
+            else
+            {
+                this.directory = Path.Combine(dir, directory);
+            }
         }
 
         string GetPath(string filename)
         {
-            string dir;
-            if (directory == null)
-            {
-                dir = File.AppDirectory;
-            }
-            else
-            {
-                dir = Path.Combine(File.AppDirectory, directory);
-            }
-            return Path.Combine(dir, filename);
+            return Path.Combine(directory, filename);
         }
 
         public bool AnyExist(params string[] filenames)
