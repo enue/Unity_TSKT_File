@@ -35,13 +35,13 @@ namespace TSKT
             exception = null;
         }
 
-        public LoadResult<S> CreateFailed<S>()
+        readonly public LoadResult<S> CreateFailed<S>()
         {
             Debug.Assert(!Succeeded);
             return new LoadResult<S>(default, state, exception);
         }
 
-        public bool Succeeded => state == LoadResult.State.Succeeded;
+        readonly public bool Succeeded => state == LoadResult.State.Succeeded;
 
         public static LoadResult<T> CreateNotFound(System.Exception ex = null)
         {
