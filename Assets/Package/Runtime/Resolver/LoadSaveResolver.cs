@@ -20,9 +20,9 @@ namespace TSKT.Files
         static readonly Dictionary<string, byte[]?> cache = new Dictionary<string, byte[]?>();
         static int processCount = 0;
 
-        public readonly string directory;
+        public readonly string? directory;
 
-        public DefaultResolver(string directory, bool userFolder = false)
+        public DefaultResolver(string? directory, bool userFolder = false)
         {
             var dir = userFolder ? Application.persistentDataPath : File.AppDirectory;
 
@@ -38,6 +38,10 @@ namespace TSKT.Files
 
         string GetPath(string filename)
         {
+            if (directory == null)
+            {
+                return filename;
+            }
             return Path.Combine(directory, filename);
         }
 
