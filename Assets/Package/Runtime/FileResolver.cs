@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿#nullable enable
+using System.IO;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -22,7 +23,7 @@ namespace TSKT.Files
 
     public class DefaultResolver : ILoadSaveResolver
     {
-        static readonly Dictionary<string, byte[]> cache = new Dictionary<string, byte[]>();
+        static readonly Dictionary<string, byte[]?> cache = new Dictionary<string, byte[]?>();
         static int processCount = 0;
 
         public readonly string directory;
@@ -232,8 +233,8 @@ namespace TSKT.Files
 
     public class JsonResolver : ISerializeResolver
     {
-        readonly string password;
-        readonly byte[] salt;
+        readonly string? password;
+        readonly byte[]? salt;
         readonly int iterations;
         readonly bool compress;
         public bool ShouldCrypt => password != null;
