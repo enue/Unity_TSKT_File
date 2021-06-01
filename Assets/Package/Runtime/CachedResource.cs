@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#nullable enable
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -9,9 +10,9 @@ namespace TSKT
     public static class CachedResource<T>
         where T : Object
     {
-        readonly static Dictionary<string, T> cache = new Dictionary<string, T>();
+        readonly static Dictionary<string, T?> cache = new Dictionary<string, T?>();
 
-        static public T Load(string path)
+        static public T? Load(string path)
         {
             if (cache.TryGetValue(path, out var result))
             {
@@ -28,7 +29,7 @@ namespace TSKT
             return asset;
         }
 
-        async static public UniTask<T> LoadAsync(string path)
+        async static public UniTask<T?> LoadAsync(string path)
         {
             if (cache.TryGetValue(path, out var asset))
             {

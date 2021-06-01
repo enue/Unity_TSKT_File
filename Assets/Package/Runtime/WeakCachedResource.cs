@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#nullable enable
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace TSKT
             }
         }
 
-        public static T Load(string path)
+        public static T? Load(string path)
         {
             if (cache.TryGetValue(path, out var weakRef))
             {
@@ -38,18 +39,21 @@ namespace TSKT
             var result = Resources.Load<T>(path);
             Debug.Assert(result, "asset not found : " + path);
 
-            if (weakRef != null)
+            if (result)
             {
-                weakRef.SetTarget(result);
-            }
-            else
-            {
-                cache.Add(path, new System.WeakReference<T>(result));
+                if (weakRef != null)
+                {
+                    weakRef.SetTarget(result);
+                }
+                else
+                {
+                    cache.Add(path, new System.WeakReference<T>(result));
+                }
             }
             return result;
         }
 
-        public async static UniTask<T> LoadAsync(string path)
+        public async static UniTask<T?> LoadAsync(string path)
         {
             if (cache.TryGetValue(path, out var weakRef))
             {
@@ -63,7 +67,10 @@ namespace TSKT
             }
 
             var result = await ResourcesUtil.LoadAsync<T>(path);
-            cache[path] = new System.WeakReference<T>(result);
+            if (result)
+            {
+                cache[path] = new System.WeakReference<T>(result!);
+            }
 
             return result;
         }

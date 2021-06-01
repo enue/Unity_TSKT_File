@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#nullable enable
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -13,16 +14,16 @@ namespace TSKT
     {
         static int processCount;
 
-        static async UniTask<LoadResult<AssetBundle>> LoadAssetBundle(string filename, int priorityOffset,
-            ICryptoTransform decryptor = null,
-            string directory = null,
+        static async UniTask<LoadResult<AssetBundle?>> LoadAssetBundle(string filename, int priorityOffset,
+            ICryptoTransform? decryptor = null,
+            string? directory = null,
             uint crc = 0)
         {
             {
                 var assetBundle = AssetBundle.GetAllLoadedAssetBundles().FirstOrDefault(_ => _.name == filename);
                 if (assetBundle)
                 {
-                    return new LoadResult<AssetBundle>(assetBundle);
+                    return new LoadResult<AssetBundle?>(assetBundle);
                 }
             }
 
@@ -64,9 +65,9 @@ namespace TSKT
 #endif
                 if (!result)
                 {
-                    return LoadResult<AssetBundle>.CreateError();
+                    return LoadResult<AssetBundle?>.CreateError();
                 }
-                return new LoadResult<AssetBundle>(result);
+                return new LoadResult<AssetBundle?>(result);
             }
             else
             {
@@ -111,15 +112,15 @@ namespace TSKT
                     }
                     catch (System.IO.DirectoryNotFoundException ex)
                     {
-                        return LoadResult<AssetBundle>.CreateNotFound(ex);
+                        return LoadResult<AssetBundle?>.CreateNotFound(ex);
                     }
                     catch (System.IO.FileNotFoundException ex)
                     {
-                        return LoadResult<AssetBundle>.CreateNotFound(ex);
+                        return LoadResult<AssetBundle?>.CreateNotFound(ex);
                     }
                     catch (System.Exception ex)
                     {
-                        return LoadResult<AssetBundle>.CreateError(ex);
+                        return LoadResult<AssetBundle?>.CreateError(ex);
                     }
 #endif
 
@@ -135,11 +136,11 @@ namespace TSKT
                         LoadingProgress.Instance.Add(request);
                         await request;
 
-                        return new LoadResult<AssetBundle>(request.assetBundle);
+                        return new LoadResult<AssetBundle?>(request.assetBundle);
                     }
                     catch (System.Exception ex)
                     {
-                        return LoadResult<AssetBundle>.CreateFailedDeserialize(ex);
+                        return LoadResult<AssetBundle?>.CreateFailedDeserialize(ex);
                     }
                 }
                 finally
@@ -149,38 +150,38 @@ namespace TSKT
             }
         }
 
-        static async public UniTask<LoadResult<T>> LoadAsync<T>(string filename, string assetName, int priorityOffset,
-            ICryptoTransform decryptor = null,
-            string directory = null,
+        static async public UniTask<LoadResult<T?>> LoadAsync<T>(string filename, string assetName, int priorityOffset,
+            ICryptoTransform? decryptor = null,
+            string? directory = null,
             uint crc = 0)
             where T : Object
         {
             var assetBundle = await LoadAssetBundle(filename, priorityOffset, decryptor: decryptor, directory: directory, crc: crc);
             if (!assetBundle.Succeeded)
             {
-                return new LoadResult<T>(default, assetBundle.state, assetBundle.exception);
+                return new LoadResult<T?>(default, assetBundle.state, assetBundle.exception);
             }
-            var assetBundleRequest = assetBundle.value.LoadAssetAsync<T>(assetName);
+            var assetBundleRequest = assetBundle.value!.LoadAssetAsync<T>(assetName);
             LoadingProgress.Instance.Add(assetBundleRequest);
             await assetBundleRequest;
 
             var result = assetBundleRequest.asset as T;
-            return new LoadResult<T>(result);
+            return new LoadResult<T?>(result);
         }
 
-        static async public UniTask<LoadResult<T[]>> LoadAllAsync<T>(string filename, int priorityOffset, ICryptoTransform decryptor = null, string directory = null)
+        static async public UniTask<LoadResult<T[]?>> LoadAllAsync<T>(string filename, int priorityOffset, ICryptoTransform? decryptor = null, string? directory = null)
             where T : Object
         {
             var assetBundle = await LoadAssetBundle(filename, priorityOffset, decryptor, directory);
             if (!assetBundle.Succeeded)
             {
-                return new LoadResult<T[]>(default, assetBundle.state, assetBundle.exception);
+                return new LoadResult<T[]?>(default, assetBundle.state, assetBundle.exception);
             }
-            var assetBundleRequest = assetBundle.value.LoadAllAssetsAsync<T>();
+            var assetBundleRequest = assetBundle.value!.LoadAllAssetsAsync<T>();
             LoadingProgress.Instance.Add(assetBundleRequest);
             await assetBundleRequest;
             var result = assetBundleRequest.allAssets.OfType<T>().ToArray();
-            return new LoadResult<T[]>(result);
+            return new LoadResult<T[]?>(result);
         }
     }
 }

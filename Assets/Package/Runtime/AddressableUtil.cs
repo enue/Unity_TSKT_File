@@ -1,6 +1,6 @@
-﻿using System.Collections;
-#if TSKT_FILE_ADDRESSABLE_SUPPORT
-
+﻿#if TSKT_FILE_ADDRESSABLE_SUPPORT
+#nullable enable
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -10,7 +10,7 @@ namespace TSKT
 {
     public static class AddressableUtil
     {
-        static async public UniTask<T> LoadAsync<T>(object key)
+        static async public UniTask<T?> LoadAsync<T>(object key)
             where T : Object
         {
             var request = Addressables.LoadAssetAsync<T>(key);
@@ -18,7 +18,7 @@ namespace TSKT
             return await request.ToUniTask(progress);
         }
 
-        static async public UniTask<T> LoadAsync<T>(AssetReferenceT<T> key)
+        static async public UniTask<T?> LoadAsync<T>(AssetReferenceT<T> key)
             where T : Object
         {
             var request = key.LoadAssetAsync();

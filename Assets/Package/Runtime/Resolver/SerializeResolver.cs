@@ -12,8 +12,8 @@ namespace TSKT.Files
 
     public class JsonResolver : ISerializeResolver
     {
-        readonly string? password;
-        readonly byte[]? salt;
+        readonly string password;
+        readonly byte[] salt;
         readonly int iterations;
         readonly bool compress;
         public bool ShouldCrypt => password != null;

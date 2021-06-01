@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#nullable enable
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
@@ -41,8 +42,8 @@ namespace TSKT
             }
         }
 
-        static LoadingProgress instance;
-        static public LoadingProgress Instance => instance ?? (instance = new LoadingProgress());
+        static LoadingProgress? instance;
+        static public LoadingProgress Instance => instance ??= new LoadingProgress();
 
         readonly List<IItem> operations = new List<IItem>();
         float fixedTotalProgress = 0f;
