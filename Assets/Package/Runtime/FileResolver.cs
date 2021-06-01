@@ -128,7 +128,6 @@ namespace TSKT.Files
                         var bytes = new byte[fileStream.Length];
                         await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
                         cache[fullPath] = bytes;
-                        --processCount;
                         return new LoadResult<byte[]>(bytes);
                     }
                 }
