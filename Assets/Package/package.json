@@ -1,8 +1,8 @@
 {
     "name": "com.github.enue.tskt_file",
     "displayName": "TSKT File",
-    "version": "0.13.0",
-    "unity": "2020.2",
+    "version": "0.13.1",
+    "unity": "2021.1",
     "description": "",
     "keywords": [],
     "category": "",
