@@ -7,7 +7,7 @@ using Cysharp.Threading.Tasks;
 
 namespace TSKT
 {
-    public class File
+    public class FileIO
     {
 #if UNITY_EDITOR || UNITY_STANDALONE
         readonly static public string AppDirectory = Path.GetDirectoryName(Application.dataPath);
@@ -18,7 +18,7 @@ namespace TSKT
         public Files.ILoadSaveResolver Resolver { get; }
         public Files.ISerializeResolver SerialzieResolver { get; }
 
-        public File(Files.ILoadSaveResolver resolver, Files.ISerializeResolver serializeResolver)
+        public FileIO(Files.ILoadSaveResolver resolver, Files.ISerializeResolver serializeResolver)
         {
             Resolver = resolver;
             SerialzieResolver = serializeResolver;

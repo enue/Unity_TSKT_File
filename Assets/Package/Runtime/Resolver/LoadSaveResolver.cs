@@ -15,15 +15,15 @@ namespace TSKT.Files
         void SaveBytes(string filename, byte[] data);
     }
 
-    public class DefaultResolver : ILoadSaveResolver
+    public class FileResolver : ILoadSaveResolver
     {
         static int processCount = 0;
 
         public readonly string? directory;
 
-        public DefaultResolver(string? directory, bool userFolder = false)
+        public FileResolver(string? directory, bool userFolder = false)
         {
-            var dir = userFolder ? Application.persistentDataPath : File.AppDirectory;
+            var dir = userFolder ? Application.persistentDataPath : FileIO.AppDirectory;
 
             if (directory == null)
             {
@@ -59,10 +59,6 @@ namespace TSKT.Files
 
         public async UniTask SaveBytesAsync(string filename, byte[] data)
         {
-#if UNITY_WEBGL
-            SaveBytes(filename, data);
-            return;
-#endif
             await UniTask.WaitWhile(() => processCount > 0);
             ++processCount;
             try
@@ -90,9 +86,6 @@ namespace TSKT.Files
 
         public async UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
         {
-#if UNITY_WEBGL
-            return LoadBytes(filename);
-#endif
             await UniTask.WaitWhile(() => processCount > 0);
             ++processCount;
             try

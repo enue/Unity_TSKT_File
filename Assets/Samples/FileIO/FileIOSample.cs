@@ -22,7 +22,7 @@ namespace TSKT
         [SerializeField]
         Toggle usePlayerPrefs = default;
 
-        File CreateFileIO()
+        FileIO CreateFileIO()
         {
             Files.ILoadSaveResolver ioResolver;
             if (usePlayerPrefs.isOn)
@@ -31,7 +31,7 @@ namespace TSKT
             }
             else
             {
-                ioResolver = new Files.DefaultResolver(directory: "SaveData");
+                ioResolver = new Files.FileResolver(directory: "SaveData");
             }
 
             var serializeResolver = new Files.JsonResolver(
@@ -39,7 +39,7 @@ namespace TSKT
                 salt: System.Text.Encoding.UTF8.GetBytes("ごろごろにゃーちゃん"),
                 iterations: 1000);
 
-            return new File(ioResolver, serializeResolver);
+            return new FileIO(ioResolver, serializeResolver);
         }
 
         public void Save()
