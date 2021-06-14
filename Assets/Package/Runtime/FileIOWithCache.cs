@@ -10,11 +10,12 @@ namespace TSKT
 {
     public class FileIOWithCache<T>
     {
-        readonly FileIO fileIO;
+        public FileIO FileIO { get; }
         readonly Dictionary<string, LoadResult<T>> cache = new Dictionary<string, LoadResult<T>>();
+
         public FileIOWithCache(FileIO fileIO)
         {
-            this.fileIO = fileIO;
+            FileIO = fileIO;
         }
 
         public byte[] Save(string filename, T obj)
@@ -23,7 +24,7 @@ namespace TSKT
             {
                 cache[filename] = new LoadResult<T>(obj);
             }
-            return fileIO.Save(filename, obj);
+            return FileIO.Save(filename, obj);
         }
 
         public UniTask<byte[]> SaveAsync(string filename, T obj)
@@ -32,7 +33,7 @@ namespace TSKT
             {
                 cache[filename] = new LoadResult<T>(obj);
             }
-            return fileIO.SaveAsync(filename, obj);
+            return FileIO.SaveAsync(filename, obj);
         }
 
         public UniTask<byte[]> SaveWhollyAsync(string filename, T obj)
@@ -41,7 +42,7 @@ namespace TSKT
             {
                 cache[filename] = new LoadResult<T>(obj);
             }
-            return fileIO.SaveWhollyAsync(filename, obj);
+            return FileIO.SaveWhollyAsync(filename, obj);
         }
 
         public bool AnyExist(params string[] filenames)
@@ -60,7 +61,7 @@ namespace TSKT
                 }
             }
 
-            return fileIO.AnyExist();
+            return FileIO.AnyExist();
         }
 
         public async UniTask<LoadResult<T>> LoadAsync(string filename)
@@ -72,7 +73,7 @@ namespace TSKT
                     return result;
                 }
             }
-            var loadResult = await fileIO.LoadAsync<T>(filename);
+            var loadResult = await FileIO.LoadAsync<T>(filename);
             lock (cache)
             {
                 cache[filename] = loadResult;
@@ -89,7 +90,7 @@ namespace TSKT
                     return result;
                 }
             }
-            var loadResult = fileIO.Load<T>(filename);
+            var loadResult = FileIO.Load<T>(filename);
             lock (cache)
             {
                 cache[filename] = loadResult;
