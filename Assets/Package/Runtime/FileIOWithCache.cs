@@ -13,9 +13,17 @@ namespace TSKT
         public FileIO FileIO { get; }
         readonly Dictionary<string, LoadResult<T>> cache = new Dictionary<string, LoadResult<T>>();
 
+        public Files.ILoadSaveResolver Resolver => FileIO.Resolver;
+        public Files.ISerializeResolver SerialzieResolver => FileIO.SerialzieResolver;
+
         public FileIOWithCache(FileIO fileIO)
         {
             FileIO = fileIO;
+        }
+
+        public FileIOWithCache(Files.ILoadSaveResolver resolver, Files.ISerializeResolver serializeResolver)
+        {
+            FileIO = new FileIO(resolver: resolver, serializeResolver: serializeResolver);
         }
 
         public byte[] Save(string filename, T obj)
