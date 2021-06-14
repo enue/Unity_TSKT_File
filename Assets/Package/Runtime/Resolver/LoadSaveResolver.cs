@@ -17,7 +17,6 @@ namespace TSKT.Files
 
     public class DefaultResolver : ILoadSaveResolver
     {
-        static readonly Dictionary<string, byte[]?> cache = new Dictionary<string, byte[]?>();
         static int processCount = 0;
 
         public readonly string? directory;
@@ -50,18 +49,10 @@ namespace TSKT.Files
             foreach (var filename in filenames)
             {
                 var path = GetPath(filename);
-                if (cache.TryGetValue(path, out var file))
-                {
-                    if (file != null)
-                    {
-                        return true;
-                    }
-                }
                 if (System.IO.File.Exists(path))
                 {
                     return true;
                 }
-                cache[path] = null;
             }
             return false;
         }
@@ -77,7 +68,6 @@ namespace TSKT.Files
             try
             {
                 var fullPath = GetPath(filename);
-                cache[fullPath] = data;
                 CreateDictionary(fullPath);
 
                 using (var file = System.IO.File.Open(fullPath, FileMode.Create))
@@ -96,8 +86,6 @@ namespace TSKT.Files
             var fullPath = GetPath(filename);
             CreateDictionary(fullPath);
             System.IO.File.WriteAllBytes(fullPath, data);
-
-            cache[fullPath] = data;
         }
 
         public async UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
@@ -111,33 +99,21 @@ namespace TSKT.Files
             {
                 var fullPath = GetPath(filename);
 
-                if (cache.TryGetValue(fullPath, out var cachedFile))
-                {
-                    if (cachedFile == null)
-                    {
-                        return LoadResult<byte[]>.CreateNotFound();
-                    }
-                    return new LoadResult<byte[]>(cachedFile);
-                }
-
                 try
                 {
                     using (var fileStream = System.IO.File.OpenRead(fullPath))
                     {
                         var bytes = new byte[fileStream.Length];
                         await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
-                        cache[fullPath] = bytes;
                         return new LoadResult<byte[]>(bytes);
                     }
                 }
                 catch (DirectoryNotFoundException ex)
                 {
-                    cache[fullPath] = null;
                     return LoadResult<byte[]>.CreateNotFound(ex);
                 }
                 catch (FileNotFoundException ex)
                 {
-                    cache[fullPath] = null;
                     return LoadResult<byte[]>.CreateNotFound(ex);
                 }
             }
@@ -151,29 +127,17 @@ namespace TSKT.Files
         {
             var fullPath = GetPath(filename);
 
-            if (cache.TryGetValue(fullPath, out var cachedFile))
-            {
-                if (cachedFile == null)
-                {
-                    return LoadResult<byte[]>.CreateNotFound();
-                }
-                return new LoadResult<byte[]>(cachedFile);
-            }
-
             try
             {
                 var bytes = System.IO.File.ReadAllBytes(fullPath);
-                cache[fullPath] = bytes;
                 return new LoadResult<byte[]>(bytes);
             }
             catch (DirectoryNotFoundException ex)
             {
-                cache[fullPath] = null;
                 return LoadResult<byte[]>.CreateNotFound(ex);
             }
             catch (FileNotFoundException ex)
             {
-                cache[fullPath] = null;
                 return LoadResult<byte[]>.CreateNotFound(ex);
             }
         }
