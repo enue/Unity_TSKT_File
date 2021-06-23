@@ -13,8 +13,9 @@ namespace TSKT
     public static class AssetBundleUtil
     {
         static int processCount;
+        readonly static List<int> waitingProcessPriorities = new List<int>();
 
-        static async UniTask<LoadResult<AssetBundle?>> LoadAssetBundle(string filename, int priorityOffset,
+        static async UniTask<LoadResult<AssetBundle?>> LoadAssetBundle(string filename, int priority,
             ICryptoTransform? decryptor = null,
             string? directory = null,
             uint crc = 0)
@@ -42,7 +43,6 @@ namespace TSKT
 #if UNITY_WEBGL && !UNITY_EDITOR
                 var request = UnityEngine.Networking.UnityWebRequestAssetBundle.GetAssetBundle(path, crc);
                 var operation = request.SendWebRequest();
-                operation.priority += priorityOffset;
                 LoadingProgress.Instance.Add(operation);
                 await operation;
                 if (request.isHttpError)
@@ -57,7 +57,6 @@ namespace TSKT
                 var result = UnityEngine.Networking.DownloadHandlerAssetBundle.GetContent(request);
 #else
                 var createRequest = AssetBundle.LoadFromFileAsync(path, crc);
-                createRequest.priority += priorityOffset;
                 LoadingProgress.Instance.Add(createRequest);
 
                 await createRequest;
@@ -73,8 +72,11 @@ namespace TSKT
             {
                 if (processCount > 0)
                 {
-                    await UniTask.WaitWhile(() => processCount > 0);
-                    return await LoadAssetBundle(filename, priorityOffset: priorityOffset, decryptor: decryptor, directory: directory, crc: crc);
+                    waitingProcessPriorities.Add(priority);
+                    waitingProcessPriorities.Sort();
+                    await UniTask.WaitWhile(() => processCount > 0 || waitingProcessPriorities[waitingProcessPriorities.Count - 1] > priority);
+                    waitingProcessPriorities.Remove(priority);
+                    return await LoadAssetBundle(filename, priority: priority, decryptor: decryptor, directory: directory, crc: crc);
                 }
 
                 ++processCount;
@@ -86,7 +88,6 @@ namespace TSKT
                     using (var webRequest = UnityEngine.Networking.UnityWebRequest.Get(path))
                     {
                         var operation = webRequest.SendWebRequest();
-                        operation.priority += priorityOffset;
                         LoadingProgress.Instance.Add(operation);
                         await operation;
 
@@ -132,7 +133,6 @@ namespace TSKT
                         var bytes = await UniTask.Run(() => decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length));
 #endif
                         var request = AssetBundle.LoadFromMemoryAsync(bytes, crc);
-                        request.priority += priorityOffset;
                         LoadingProgress.Instance.Add(request);
                         await request;
 
@@ -150,13 +150,13 @@ namespace TSKT
             }
         }
 
-        static async public UniTask<LoadResult<T?>> LoadAsync<T>(string filename, string assetName, int priorityOffset,
+        static async public UniTask<LoadResult<T?>> LoadAsync<T>(string filename, string assetName, int priority,
             ICryptoTransform? decryptor = null,
             string? directory = null,
             uint crc = 0)
             where T : Object
         {
-            var assetBundle = await LoadAssetBundle(filename, priorityOffset, decryptor: decryptor, directory: directory, crc: crc);
+            var assetBundle = await LoadAssetBundle(filename, priority, decryptor: decryptor, directory: directory, crc: crc);
             if (!assetBundle.Succeeded)
             {
                 return new LoadResult<T?>(default, assetBundle.state, assetBundle.exception);
