@@ -28,59 +28,59 @@ namespace TSKT
                 }
             }
 
-            string path;
-            if (directory == null)
+            if (processCount > 0)
             {
-                path = filename;
-            }
-            else
-            {
-                path = System.IO.Path.Combine(directory, filename);
+                waitingProcessPriorities.Add(priority);
+                waitingProcessPriorities.Sort();
+                await UniTask.WaitWhile(() => processCount > 0 || waitingProcessPriorities[waitingProcessPriorities.Count - 1] > priority);
+                waitingProcessPriorities.Remove(priority);
+                return await LoadAssetBundle(filename, priority: priority, decryptor: decryptor, directory: directory, crc: crc);
             }
 
-            if (decryptor == null)
+            ++processCount;
+            try
             {
+                string path;
+                if (directory == null)
+                {
+                    path = filename;
+                }
+                else
+                {
+                    path = System.IO.Path.Combine(directory, filename);
+                }
+
+                if (decryptor == null)
+                {
 #if UNITY_WEBGL && !UNITY_EDITOR
-                var request = UnityEngine.Networking.UnityWebRequestAssetBundle.GetAssetBundle(path, crc);
-                var operation = request.SendWebRequest();
-                LoadingProgress.Instance.Add(operation);
-                await operation;
-                if (request.isHttpError)
-                {
-                    return LoadResult<AssetBundle>.CreateError();
-                }
-                if (request.isNetworkError)
-                {
-                    return LoadResult<AssetBundle>.CreateError();
-                }
+                    var request = UnityEngine.Networking.UnityWebRequestAssetBundle.GetAssetBundle(path, crc);
+                    var operation = request.SendWebRequest();
+                    LoadingProgress.Instance.Add(operation);
+                    await operation;
+                    if (request.isHttpError)
+                    {
+                        return LoadResult<AssetBundle>.CreateError();
+                    }
+                    if (request.isNetworkError)
+                    {
+                        return LoadResult<AssetBundle>.CreateError();
+                    }
 
-                var result = UnityEngine.Networking.DownloadHandlerAssetBundle.GetContent(request);
+                    var result = UnityEngine.Networking.DownloadHandlerAssetBundle.GetContent(request);
 #else
-                var createRequest = AssetBundle.LoadFromFileAsync(path, crc);
-                LoadingProgress.Instance.Add(createRequest);
+                    var createRequest = AssetBundle.LoadFromFileAsync(path, crc);
+                    LoadingProgress.Instance.Add(createRequest);
 
-                await createRequest;
-                var result = createRequest.assetBundle;
+                    await createRequest;
+                    var result = createRequest.assetBundle;
 #endif
-                if (!result)
-                {
-                    return LoadResult<AssetBundle?>.CreateError();
+                    if (!result)
+                    {
+                        return LoadResult<AssetBundle?>.CreateError();
+                    }
+                    return new LoadResult<AssetBundle?>(result);
                 }
-                return new LoadResult<AssetBundle?>(result);
-            }
-            else
-            {
-                if (processCount > 0)
-                {
-                    waitingProcessPriorities.Add(priority);
-                    waitingProcessPriorities.Sort();
-                    await UniTask.WaitWhile(() => processCount > 0 || waitingProcessPriorities[waitingProcessPriorities.Count - 1] > priority);
-                    waitingProcessPriorities.Remove(priority);
-                    return await LoadAssetBundle(filename, priority: priority, decryptor: decryptor, directory: directory, crc: crc);
-                }
-
-                ++processCount;
-                try
+                else
                 {
                     byte[] encryptedBytes;
 
@@ -143,10 +143,10 @@ namespace TSKT
                         return LoadResult<AssetBundle?>.CreateFailedDeserialize(ex);
                     }
                 }
-                finally
-                {
-                    --processCount;
-                }
+            }
+            finally
+            {
+                --processCount;
             }
         }
 
