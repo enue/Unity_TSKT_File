@@ -9,16 +9,16 @@ using Cysharp.Threading.Tasks;
 
 namespace TSKT
 {
-    public interface IAssetBundleLoadResolver
+    public class WebAssetBundleLoader : AssetBundleLoader
     {
-        UniTask<LoadResult<AssetBundle?>> LoadAssetBundle(string filename, uint crc = 0);
-    }
+        readonly Hash128? hash128;
 
-    public class WebAssetBundleResolver : IAssetBundleLoadResolver
-    {
-        Hash128? hash128;
+        public WebAssetBundleLoader(Hash128? hash128)
+        {
+            this.hash128 = hash128;
+        }
 
-        public async UniTask<LoadResult<AssetBundle?>> LoadAssetBundle(string filename, uint crc = 0)
+        override protected async UniTask<LoadResult<AssetBundle?>> Load(string filename, uint crc = 0)
         {
             using var request = hash128.HasValue
                 ? UnityEngine.Networking.UnityWebRequestAssetBundle.GetAssetBundle(filename, hash128.Value, crc)
@@ -41,9 +41,9 @@ namespace TSKT
         }
     }
 
-    public class LocalAssetBundleLoadResolver : IAssetBundleLoadResolver
+    public class LocalAssetBundleLoader : AssetBundleLoader
     {
-        public async UniTask<LoadResult<AssetBundle?>> LoadAssetBundle(string filename, uint crc = 0)
+        override protected async UniTask<LoadResult<AssetBundle?>> Load(string filename, uint crc = 0)
         {
             var createRequest = AssetBundle.LoadFromFileAsync(filename, crc);
             LoadingProgress.Instance.Add(createRequest);
@@ -58,7 +58,7 @@ namespace TSKT
         }
     }
 
-    public class CryptedAssetBundleLoadResolver : IAssetBundleLoadResolver
+    public class CryptedAssetBundleLoader : AssetBundleLoader
     {
         public bool Web { get; set; }
 
@@ -66,14 +66,14 @@ namespace TSKT
         readonly byte[] salt;
         readonly int iteration;
 
-        public CryptedAssetBundleLoadResolver(string key, byte[] salt, int iteration)
+        public CryptedAssetBundleLoader(string key, byte[] salt, int iteration)
         {
             this.key = key;
             this.salt = salt;
             this.iteration = iteration;
         }
 
-        public async UniTask<LoadResult<AssetBundle?>> LoadAssetBundle(string filename, uint crc = 0)
+        override protected async UniTask<LoadResult<AssetBundle?>> Load(string filename, uint crc = 0)
         {
             byte[] encryptedBytes;
 
@@ -116,7 +116,7 @@ namespace TSKT
             try
             {
 #if UNITY_WEBGL
-                var bytes = decryptor.Decrypt(CryptUtil.Decrypt(encryptedBytes, key, salt, iteration));
+                var bytes = CryptUtil.Decrypt(encryptedBytes, key, salt, iteration);
 #else
                 var bytes = await UniTask.Run(() => CryptUtil.Decrypt(encryptedBytes, key, salt, iteration));
 #endif
