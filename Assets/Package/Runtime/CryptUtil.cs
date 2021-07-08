@@ -66,35 +66,4 @@ namespace TSKT
             }
         }
     }
-
-    public static class CompressUtil
-    {
-        static public byte[] Compress(byte[] bytes)
-        {
-            using (var compressed = new MemoryStream())
-            {
-                using (var deflateStream = new DeflateStream(compressed, CompressionMode.Compress))
-                {
-                    deflateStream.Write(bytes, 0, bytes.Length);
-                }
-
-                return compressed.ToArray();
-            }
-        }
-
-        static public byte[] Decompress(byte[] bytes)
-        {
-            using (var compressed = new MemoryStream(bytes))
-            {
-                using (var deflateStream = new DeflateStream(compressed, CompressionMode.Decompress))
-                {
-                    using (var decompressed = new MemoryStream())
-                    {
-                        deflateStream.CopyTo(decompressed);
-                        return decompressed.ToArray();
-                    }
-                }
-            }
-        }
-    }
 }

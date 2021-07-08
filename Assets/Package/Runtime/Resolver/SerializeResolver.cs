@@ -56,11 +56,15 @@ namespace TSKT.Files
             {
                 bytes = CryptUtil.Decrypt(bytes, password, salt, iterations);
             }
+            string json;
             if (compress)
             {
-                bytes = CompressUtil.Decompress(bytes);
+                json = CompressUtil.DecompressToString(bytes);
             }
-            var json = System.Text.Encoding.UTF8.GetString(bytes);
+            else
+            {
+                json = System.Text.Encoding.UTF8.GetString(bytes);
+            }
             return JsonUtility.FromJson<T>(json);
         }
     }
