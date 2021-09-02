@@ -105,5 +105,13 @@ namespace TSKT
             }
             return loadResult;
         }
+
+        public void PseudoDelete(string filename)
+        {
+            lock (cache)
+            {
+                cache[filename] = LoadResult<T>.CreateNotFound();
+            }
+        }
     }
 }
