@@ -1,8 +1,9 @@
 {
     "name": "TSKT.File.Editor",
+    "rootNamespace": "",
     "references": [
-        "TSKT.Editor.Editor",
-        "TSKTFile"
+        "GUID:1061cc3a9b7674142a52f0809132512f",
+        "GUID:2245217fb1e4289429e8a92b7b18d438"
     ],
     "includePlatforms": [
         "Editor"
