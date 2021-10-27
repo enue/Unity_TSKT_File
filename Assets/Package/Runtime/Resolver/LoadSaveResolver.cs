@@ -94,12 +94,8 @@ namespace TSKT.Files
 
                 try
                 {
-                    using (var fileStream = System.IO.File.OpenRead(fullPath))
-                    {
-                        var bytes = new byte[fileStream.Length];
-                        await fileStream.ReadAsync(bytes, 0, bytes.Length).AsUniTask();
-                        return new LoadResult<byte[]>(bytes);
-                    }
+                    var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
+                    return new LoadResult<byte[]>(bytes);
                 }
                 catch (DirectoryNotFoundException ex)
                 {
