@@ -66,10 +66,7 @@ namespace TSKT.Files
                 var fullPath = GetPath(filename);
                 CreateDictionary(fullPath);
 
-                using (var file = System.IO.File.Open(fullPath, FileMode.Create))
-                {
-                    await file.WriteAsync(data, 0, data.Length).AsUniTask();
-                }
+                await System.IO.File.WriteAllBytesAsync(fullPath, data);
             }
             finally
             {
