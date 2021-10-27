@@ -109,6 +109,10 @@ namespace TSKT.Files
                 {
                     return LoadResult<byte[]>.CreateNotFound(ex);
                 }
+                catch (IOException ex)
+                {
+                    return LoadResult<byte[]>.CreateError(ex);
+                }
             }
             finally
             {
