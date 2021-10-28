@@ -19,13 +19,13 @@ namespace TSKT.Files
     {
         static int processCount = 0;
 
-        public readonly string? directory;
+        public readonly string directory;
 
         public FileResolver(string? directory, bool userFolder = false)
         {
             var dir = userFolder ? Application.persistentDataPath : FileIO.AppDirectory;
 
-            if (directory == null)
+            if (string.IsNullOrEmpty(directory))
             {
                 this.directory = dir;
             }
@@ -37,10 +37,6 @@ namespace TSKT.Files
 
         string GetPath(string filename)
         {
-            if (directory == null)
-            {
-                return filename;
-            }
             return Path.Combine(directory, filename);
         }
 
@@ -63,9 +59,9 @@ namespace TSKT.Files
             ++processCount;
             try
             {
-                var fullPath = GetPath(filename);
-                CreateDictionary(fullPath);
+                Directory.CreateDirectory(directory);
 
+                var fullPath = GetPath(filename);
                 await System.IO.File.WriteAllBytesAsync(fullPath, data);
             }
             finally
@@ -76,8 +72,8 @@ namespace TSKT.Files
 
         public void SaveBytes(string filename, byte[] data)
         {
+            Directory.CreateDirectory(directory);
             var fullPath = GetPath(filename);
-            CreateDictionary(fullPath);
             System.IO.File.WriteAllBytes(fullPath, data);
         }
 
@@ -130,15 +126,6 @@ namespace TSKT.Files
             {
                 return LoadResult<byte[]>.CreateNotFound(ex);
             }
-        }
-
-        static void CreateDictionary(string fullPath)
-        {
-            var index = Mathf.Max(
-                fullPath.LastIndexOf(Path.DirectorySeparatorChar),
-                fullPath.LastIndexOf(Path.AltDirectorySeparatorChar));
-            var dir = fullPath.Substring(0, index);
-            Directory.CreateDirectory(dir);
         }
     }
 
