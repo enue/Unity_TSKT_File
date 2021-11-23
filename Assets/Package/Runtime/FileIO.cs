@@ -10,7 +10,7 @@ namespace TSKT
     public class FileIO
     {
 #if UNITY_EDITOR || UNITY_STANDALONE
-        readonly static public string AppDirectory = Path.GetDirectoryName(Application.dataPath);
+        public static string AppDirectory => Path.GetDirectoryName(Application.dataPath);
 #else
         public static string AppDirectory => Application.persistentDataPath;
 #endif
