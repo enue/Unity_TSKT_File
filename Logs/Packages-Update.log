@@ -205,3 +205,11 @@ The following packages were updated:
   com.unity.addressables from version 1.18.15 to 1.19.6
   com.unity.collab-proxy from version 1.9.0 to 1.13.5
   com.unity.timeline from version 1.5.6 to 1.6.2
+
+=== Fri Dec 17 17:43:28 2021
+
+Packages were changed.
+Update Mode: updateDependencies
+
+The following packages were updated:
+  com.unity.collab-proxy from version 1.13.5 to 1.15.4
