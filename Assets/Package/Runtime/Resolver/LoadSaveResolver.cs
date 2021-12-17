@@ -84,24 +84,20 @@ namespace TSKT.Files
             try
             {
                 var fullPath = GetPath(filename);
-
-                try
-                {
-                    var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
-                    return new LoadResult<byte[]>(bytes);
-                }
-                catch (DirectoryNotFoundException ex)
-                {
-                    return LoadResult<byte[]>.CreateNotFound(ex);
-                }
-                catch (FileNotFoundException ex)
-                {
-                    return LoadResult<byte[]>.CreateNotFound(ex);
-                }
-                catch (IOException ex)
-                {
-                    return LoadResult<byte[]>.CreateError(ex);
-                }
+                var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
+                return new LoadResult<byte[]>(bytes);
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                return LoadResult<byte[]>.CreateNotFound(ex);
+            }
+            catch (FileNotFoundException ex)
+            {
+                return LoadResult<byte[]>.CreateNotFound(ex);
+            }
+            catch (IOException ex)
+            {
+                return LoadResult<byte[]>.CreateError(ex);
             }
             finally
             {
@@ -111,10 +107,9 @@ namespace TSKT.Files
 
         public LoadResult<byte[]> LoadBytes(string filename)
         {
-            var fullPath = GetPath(filename);
-
             try
             {
+                var fullPath = GetPath(filename);
                 var bytes = System.IO.File.ReadAllBytes(fullPath);
                 return new LoadResult<byte[]>(bytes);
             }
@@ -125,6 +120,10 @@ namespace TSKT.Files
             catch (FileNotFoundException ex)
             {
                 return LoadResult<byte[]>.CreateNotFound(ex);
+            }
+            catch (IOException ex)
+            {
+                return LoadResult<byte[]>.CreateError(ex);
             }
         }
     }
