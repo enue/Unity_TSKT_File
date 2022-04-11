@@ -12,7 +12,7 @@ namespace TSKT
     {
         readonly static Dictionary<string, T?> cache = new Dictionary<string, T?>();
 
-        static public T? Load(string path)
+        public static T? Load(string path)
         {
             if (cache.TryGetValue(path, out var result))
             {
@@ -22,30 +22,29 @@ namespace TSKT
                 }
             }
 
-            var asset = Resources.Load<T>(path);
-            Debug.Assert(asset, "asset not found : " + path);
+            result = Resources.Load<T>(path);
 
-            cache.Add(path, asset);
-            return asset;
+            cache[path] = result;
+            return result;
         }
 
-        async static public UniTask<T?> LoadAsync(string path)
+        public async static UniTask<T?> LoadAsync(string path)
         {
-            if (cache.TryGetValue(path, out var asset))
+            if (cache.TryGetValue(path, out var result))
             {
-                if (asset)
+                if (result)
                 {
-                    return asset;
+                    return result;
                 }
             }
 
-            var result = await ResourcesUtil.LoadAsync<T>(path);
+            result = await ResourcesUtil.LoadAsync<T>(path);
             cache[path] = result;
 
             return result;
         }
 
-        static public void Expire()
+        public static void Expire()
         {
             cache.Clear();
         }

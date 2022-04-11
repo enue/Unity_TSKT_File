@@ -37,7 +37,6 @@ namespace TSKT
             }
 
             var result = Resources.Load<T>(path);
-            Debug.Assert(result, "asset not found : " + path);
 
             if (result)
             {
@@ -47,7 +46,7 @@ namespace TSKT
                 }
                 else
                 {
-                    cache.Add(path, new System.WeakReference<T>(result));
+                    cache[path] = new System.WeakReference<T>(result);
                 }
             }
             return result;
@@ -75,7 +74,7 @@ namespace TSKT
             return result;
         }
 
-        static public void Expire()
+        public static void Expire()
         {
             cache.Clear();
         }

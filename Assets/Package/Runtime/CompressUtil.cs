@@ -11,13 +11,13 @@ namespace TSKT
 {
     public static class CompressUtil
     {
-        static public byte[] Compress(byte[] bytes)
+        public static byte[] Compress(ReadOnlySpan<byte> bytes)
         {
             using (var compressed = new MemoryStream())
             {
                 using (var deflateStream = new DeflateStream(compressed, CompressionMode.Compress))
                 {
-                    deflateStream.Write(bytes, 0, bytes.Length);
+                    deflateStream.Write(bytes);
                 }
 
                 return compressed.ToArray();
@@ -36,7 +36,7 @@ namespace TSKT
                 }
             }
         }
-        static public string DecompressToString(byte[] bytes)
+        public static string DecompressToString(byte[] bytes)
         {
             using (var stream = DecompressToStream(bytes))
             {
@@ -44,7 +44,7 @@ namespace TSKT
             }
         }
 
-        static public byte[] Decompress(byte[] bytes)
+        public static byte[] Decompress(byte[] bytes)
         {
             using (var stream = DecompressToStream(bytes))
             {
