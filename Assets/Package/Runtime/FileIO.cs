@@ -43,7 +43,7 @@ namespace TSKT
 #if UNITY_WEBGL
                 var bytes = SerialzieResolver.Serialize(obj);
 #else
-                var bytes = await UniTask.Run(() => SerialzieResolver.Serialize(obj));
+                var bytes = await UniTask.RunOnThreadPool(() => SerialzieResolver.Serialize(obj));
 #endif
                 Resolver.SaveBytes(filename, bytes);
                 return bytes;
@@ -66,7 +66,7 @@ namespace TSKT
 #if UNITY_WEBGL
                 var bytes = SerialzieResolver.Serialize(obj);
 #else
-                var bytes = await UniTask.Run(() => SerialzieResolver.Serialize(obj));
+                var bytes = await UniTask.RunOnThreadPool(() => SerialzieResolver.Serialize(obj));
 #endif
                 progress.Report(0.5f);
 
@@ -121,7 +121,7 @@ namespace TSKT
 #if UNITY_WEBGL
                     var t = SerialzieResolver.Deserialize<T>(bytes);
 #else
-                    var t = await UniTask.Run(() => SerialzieResolver.Deserialize<T>(bytes));
+                    var t = await UniTask.RunOnThreadPool(() => SerialzieResolver.Deserialize<T>(bytes));
 #endif
                     return new LoadResult<T>(t);
                 }
