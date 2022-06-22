@@ -76,14 +76,5 @@ namespace TSKT
             Debug.Log("load udon.bytes");
             Debug.Log(udon.Succeeded ? udon.value.name : udon.state.ToString());
         }
-
-        public void PrintFiles()
-        {
-            var files = CreateFileIO().Resolver.GetFiles();
-            foreach (var it in files)
-            {
-                Debug.Log(it);
-            }
-        }
     }
 }
