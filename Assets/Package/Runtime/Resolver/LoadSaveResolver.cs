@@ -9,6 +9,7 @@ namespace TSKT.Files
     public interface ILoadSaveResolver
     {
         bool AnyExist(params string[] filenames);
+        string[] GetFiles();
         UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename);
         UniTask SaveBytesAsync(string filename, byte[] data);
         LoadResult<byte[]> LoadBytes(string filename);
@@ -38,6 +39,11 @@ namespace TSKT.Files
         string GetPath(string filename)
         {
             return Path.Combine(directory, filename);
+        }
+
+        public string[] GetFiles()
+        {
+            return Directory.GetFiles(directory);
         }
 
         public bool AnyExist(params string[] filenames)
@@ -166,6 +172,11 @@ namespace TSKT.Files
             }
             var value = PlayerPrefs.GetString(filename);
             return new LoadResult<byte[]>(System.Convert.FromBase64String(value));
+        }
+
+        public string[] GetFiles()
+        {
+            throw new System.NotImplementedException();
         }
     }
 
