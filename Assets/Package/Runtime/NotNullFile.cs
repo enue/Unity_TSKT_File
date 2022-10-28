@@ -42,13 +42,14 @@ namespace TSKT
             }
         }
 
-        public async UniTask<T> LoadAsync()
+        public async UniTask<T> LoadAsync(System.IProgress<float>? progress = null)
         {
             if (value != null)
             {
+                progress?.Report(1f);
                 return value;
             }
-            var result = await io.LoadAsync<T>(filename);
+            var result = await io.LoadAsync<T>(filename, progress);
             if (value != null)
             {
                 return value;
@@ -71,11 +72,15 @@ namespace TSKT
                 io.Save(filename, value);
             }
         }
-        public async UniTask SaveAsync()
+        public async UniTask SaveAsync(System.IProgress<float>? progress = null)
         {
-            if (value != null)
+            if (value == null)
             {
-                await io.SaveAsync(filename, value);
+                progress?.Report(1f);
+            }
+            else
+            {
+                await io.SaveAsync(filename, value, progress);
             }
         }
     }

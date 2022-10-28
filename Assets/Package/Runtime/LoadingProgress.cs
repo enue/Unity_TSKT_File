@@ -28,24 +28,24 @@ namespace TSKT
             public bool IsDone => operation.isDone;
         }
 
-        class ProgressItem : System.IProgress<float>, IItem
+        class ProgressItem : IItem
         {
             public float Progress { get; private set; }
             public bool IsDone => Progress >= 1f;
 
-            public void Report(float value)
+            public ProgressItem(System.Progress<float> progress)
             {
-                if (Progress < value)
+                progress.ProgressChanged += (_, value) =>
                 {
                     Progress = value;
-                }
+                };
             }
         }
 
         static LoadingProgress? instance;
-        static public LoadingProgress Instance => instance ??= new LoadingProgress();
+        public static LoadingProgress Instance => instance ??= new();
 
-        readonly List<IItem> operations = new List<IItem>();
+        readonly List<IItem> operations = new();
         float fixedTotalProgress = 0f;
         float fixedProgress = 0f;
 
@@ -61,9 +61,10 @@ namespace TSKT
 
         public System.IProgress<float> Add()
         {
-            var item = new ProgressItem();
+            var result = new System.Progress<float>();
+            var item = new ProgressItem(result);
             Add(item);
-            return item;
+            return result;
         }
  
         void Add(IItem item)

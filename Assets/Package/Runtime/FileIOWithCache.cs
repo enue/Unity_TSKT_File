@@ -35,22 +35,22 @@ namespace TSKT
             return FileIO.Save(filename, obj);
         }
 
-        public UniTask<byte[]> SaveAsync(string filename, T obj)
+        public UniTask<byte[]> SaveAsync(string filename, T obj, System.IProgress<float>? progress = null)
         {
             lock (cache)
             {
                 cache[filename] = new LoadResult<T>(obj);
             }
-            return FileIO.SaveAsync(filename, obj);
+            return FileIO.SaveAsync(filename, obj, progress);
         }
 
-        public UniTask<byte[]> SaveWhollyAsync(string filename, T obj)
+        public UniTask<byte[]> SaveWhollyAsync(string filename, T obj, System.IProgress<float>? progress = null)
         {
             lock (cache)
             {
                 cache[filename] = new LoadResult<T>(obj);
             }
-            return FileIO.SaveWhollyAsync(filename, obj);
+            return FileIO.SaveWhollyAsync(filename, obj, progress);
         }
 
         public bool AnyExist(params string[] filenames)
@@ -72,16 +72,17 @@ namespace TSKT
             return FileIO.AnyExist();
         }
 
-        public async UniTask<LoadResult<T>> LoadAsync(string filename)
+        public async UniTask<LoadResult<T>> LoadAsync(string filename, System.IProgress<float>? progress = null)
         {
             lock (cache)
             {
                 if (cache.TryGetValue(filename, out var result))
                 {
+                    progress?.Report(1f);
                     return result;
                 }
             }
-            var loadResult = await FileIO.LoadAsync<T>(filename);
+            var loadResult = await FileIO.LoadAsync<T>(filename, progress);
             lock (cache)
             {
                 cache[filename] = loadResult;

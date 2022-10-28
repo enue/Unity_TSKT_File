@@ -8,12 +8,11 @@ namespace TSKT
 {
     public static class ResourcesUtil
     {
-        static async public UniTask<T?> LoadAsync<T>(string path)
+        static async public UniTask<T?> LoadAsync<T>(string path, System.IProgress<float>? progress = null)
             where T : Object
         {
             var request = Resources.LoadAsync<T>(path);
-            LoadingProgress.Instance.Add(request);
-            await request;
+            await request.ToUniTask(progress);
             return request.asset as T;
         }
     }

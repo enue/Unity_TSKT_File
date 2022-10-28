@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#nullable enable
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -34,10 +35,8 @@ namespace TSKT
         /// <summary>
         /// シリアライズのみ非同期で、ファイルアクセスは同期的に処理する。タスクキルによるファイル破損を気にする必要がない
         /// </summary>
-        public async UniTask<byte[]> SaveAsync<T>(string filename, T obj)
+        public async UniTask<byte[]> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
         {
-            var progress = LoadingProgress.Instance.Add();
-
             try
             {
 #if UNITY_WEBGL
@@ -50,17 +49,15 @@ namespace TSKT
             }
             finally
             {
-                progress.Report(1f);
+                progress?.Report(1f);
             }
         }
 
         /// <summary>
         /// シリアライズからファイルアクセスまですべて非同期で行う。途中でタスクキルされるとファイルが壊れることがあるので注意。対応済みの場合のみ採用すること
         /// </summary>
-        public async UniTask<byte[]> SaveWhollyAsync<T>(string filename, T obj)
+        public async UniTask<byte[]> SaveWhollyAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
         {
-            var progress = LoadingProgress.Instance.Add();
-
             try
             {
 #if UNITY_WEBGL
@@ -68,14 +65,14 @@ namespace TSKT
 #else
                 var bytes = await UniTask.RunOnThreadPool(() => SerialzieResolver.Serialize(obj));
 #endif
-                progress.Report(0.5f);
+                progress?.Report(0.5f);
 
                 await Resolver.SaveBytesAsync(filename, bytes);
                 return bytes;
             }
             finally
             {
-                progress.Report(1f);
+                progress?.Report(1f);
             }
         }
 
@@ -92,10 +89,8 @@ namespace TSKT
             return Resolver.AnyExist(filenames);
         }
 
-        public async UniTask<LoadResult<T>> LoadAsync<T>(string filename)
+        public async UniTask<LoadResult<T>> LoadAsync<T>(string filename, System.IProgress<float>? progress = null)
         {
-            var progress = LoadingProgress.Instance.Add();
-
             try
             {
                 byte[] bytes;
@@ -114,7 +109,7 @@ namespace TSKT
                     return LoadResult<T>.CreateError(ex);
                 }
 
-                progress.Report(0.5f);
+                progress?.Report(0.5f);
 
                 try
                 {
@@ -134,7 +129,7 @@ namespace TSKT
             }
             finally
             {
-                progress.Report(1f);
+                progress?.Report(1f);
             }
         }
 
