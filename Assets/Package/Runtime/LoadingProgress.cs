@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-
+#if TSKT_FILE_UNIRX_SUPPORT
+using UniRx;
+#endif
 namespace TSKT
 {
     public class LoadingProgress
@@ -48,7 +50,9 @@ namespace TSKT
         readonly List<IItem> operations = new();
         float fixedTotalProgress = 0f;
         float fixedProgress = 0f;
-
+#if TSKT_FILE_UNIRX_SUPPORT
+        public ReactiveProperty<int> OperationCount { get; } = new(0);
+#endif
         LoadingProgress()
         {
             // nop;
@@ -77,6 +81,9 @@ namespace TSKT
             fixedTotalProgress = totalProgress;
 
             operations.Add(item);
+#if TSKT_FILE_UNIRX_SUPPORT
+            OperationCount.Value = operations.Count;
+#endif
         }
 
         float GetProgress(out float totalProgress)
@@ -89,6 +96,9 @@ namespace TSKT
             if (operations.TrueForAll(_ => _.IsDone))
             {
                 operations.Clear();
+#if TSKT_FILE_UNIRX_SUPPORT
+                OperationCount.Value = 0;
+#endif
 
                 totalProgress = 0f;
                 return 1f;
