@@ -63,13 +63,6 @@ namespace TSKT
             Debug.Log("save udon.bytes : kashiwa");
         }
 
-        public async void SaveWhollyAsync()
-        {
-            var udon = new Udon() { name = "lemon" };
-            await CreateFileIO().SaveWhollyAsync("udon.bytes", udon);
-            Debug.Log("save udon.bytes : lemon");
-        }
-
         public async void LoadAsync()
         {
             var udon = await CreateFileIO().LoadAsync<Udon>("udon.bytes");

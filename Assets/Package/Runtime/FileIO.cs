@@ -33,7 +33,7 @@ namespace TSKT
         }
 
         /// <summary>
-        /// シリアライズのみ非同期で、ファイルアクセスは同期的に処理する。タスクキルによるファイル破損を気にする必要がない
+        /// シリアライズからファイルアクセスまですべて非同期で行う。途中でタスクキルされるとファイルが壊れることがあるので注意。対応済みの場合のみ採用すること
         /// </summary>
         public async UniTask<byte[]> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
         {
@@ -44,28 +44,8 @@ namespace TSKT
 #else
                 var bytes = await UniTask.RunOnThreadPool(() => SerialzieResolver.Serialize(obj));
 #endif
-                Resolver.SaveBytes(filename, bytes);
-                return bytes;
-            }
-            finally
-            {
-                progress?.Report(1f);
-            }
-        }
-
-        /// <summary>
-        /// シリアライズからファイルアクセスまですべて非同期で行う。途中でタスクキルされるとファイルが壊れることがあるので注意。対応済みの場合のみ採用すること
-        /// </summary>
-        public async UniTask<byte[]> SaveWhollyAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
-        {
-            try
-            {
-#if UNITY_WEBGL
-                var bytes = SerialzieResolver.Serialize(obj);
-#else
-                var bytes = await UniTask.RunOnThreadPool(() => SerialzieResolver.Serialize(obj));
-#endif
                 progress?.Report(0.5f);
+                Application.wantsToQuit += WantsToQuit;
 
                 await Resolver.SaveBytesAsync(filename, bytes);
                 return bytes;
@@ -73,7 +53,9 @@ namespace TSKT
             finally
             {
                 progress?.Report(1f);
+                Application.wantsToQuit -= WantsToQuit;
             }
+            static bool WantsToQuit() => false;
         }
 
         public bool AnyExist(params string[] filenames)

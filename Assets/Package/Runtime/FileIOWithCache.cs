@@ -44,15 +44,6 @@ namespace TSKT
             return FileIO.SaveAsync(filename, obj, progress);
         }
 
-        public UniTask<byte[]> SaveWhollyAsync(string filename, T obj, System.IProgress<float>? progress = null)
-        {
-            lock (cache)
-            {
-                cache[filename] = new LoadResult<T>(obj);
-            }
-            return FileIO.SaveWhollyAsync(filename, obj, progress);
-        }
-
         public bool AnyExist(params string[] filenames)
         {
             lock (cache)
