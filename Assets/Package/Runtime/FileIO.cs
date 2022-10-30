@@ -45,17 +45,16 @@ namespace TSKT
                 var bytes = await UniTask.RunOnThreadPool(() => SerialzieResolver.Serialize(obj));
 #endif
                 progress?.Report(0.5f);
-                Application.wantsToQuit += WantsToQuit;
-
-                await Resolver.SaveBytesAsync(filename, bytes);
+                using (new PreventFromQuitting(null))
+                {
+                    await Resolver.SaveBytesAsync(filename, bytes);
+                }
                 return bytes;
             }
             finally
             {
                 progress?.Report(1f);
-                Application.wantsToQuit -= WantsToQuit;
             }
-            static bool WantsToQuit() => false;
         }
 
         public bool AnyExist(params string[] filenames)
