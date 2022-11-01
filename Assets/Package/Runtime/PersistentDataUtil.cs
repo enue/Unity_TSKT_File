@@ -12,7 +12,7 @@ namespace TSKT
             where T : new()
         {
             var io = new FileIO(
-                resolver: new Files.FileResolver("", userFolder: true),
+                resolver: new Files.FileResolver(Application.persistentDataPath),
                 serializeResolver: new Files.JsonResolver());
             return new NotNullFile<T>(filename, io);
         }
@@ -20,7 +20,7 @@ namespace TSKT
             where T : new()
         {
             var io = new FileIO(
-                resolver: new Files.FileResolver("", userFolder: true),
+                resolver: new Files.FileResolver(Application.persistentDataPath),
                 serializeResolver: new Files.JsonResolver(password, salt, iterations));
             return new NotNullFile<T>(filename, io);
         }
@@ -28,7 +28,7 @@ namespace TSKT
         public static NullableFile<T> CreateNullableEncryptedFile<T>(string filename, string password, byte[] salt, int iterations)
         {
             var io = new FileIO(
-                resolver: new Files.FileResolver("", userFolder: true),
+                resolver: new Files.FileResolver(Application.persistentDataPath),
                 serializeResolver: new Files.JsonResolver(password, salt, iterations));
             return new NullableFile<T>(filename, io);
         }

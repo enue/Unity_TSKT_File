@@ -21,18 +21,9 @@ namespace TSKT.Files
 
         public readonly string directory;
 
-        public FileResolver(string? directory, bool userFolder = false)
+        public FileResolver(string directory)
         {
-            var dir = userFolder ? Application.persistentDataPath : FileIO.AppDirectory;
-
-            if (string.IsNullOrEmpty(directory))
-            {
-                this.directory = dir;
-            }
-            else
-            {
-                this.directory = Path.Combine(dir, directory);
-            }
+            this.directory = directory;
         }
 
         string GetPath(string filename)
