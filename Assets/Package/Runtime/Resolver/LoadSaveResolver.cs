@@ -76,7 +76,7 @@ namespace TSKT.Files
             ++processCount;
             try
             {
-                UserFolder.CreateDirectory(directory);
+                Directory.CreateDirectory(directory);
 
                 var fullPath = GetPath(filename);
                 await System.IO.File.WriteAllBytesAsync(fullPath, data);
@@ -89,7 +89,7 @@ namespace TSKT.Files
 
         public void SaveBytes(string filename, byte[] data)
         {
-            UserFolder.CreateDirectory(directory);
+            Directory.CreateDirectory(directory);
             var fullPath = GetPath(filename);
             System.IO.File.WriteAllBytes(fullPath, data);
         }
