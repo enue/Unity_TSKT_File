@@ -28,15 +28,20 @@ namespace TSKT.Files
             }
         }
         public static string AppDataLoalLowCompanyProduct => Application.persistentDataPath;
-        public static string ApplicationDirectory
+        public static string GetApplicationDirectory(string? subFolder)
         {
-            get
-            {
 #if UNITY_EDITOR || UNITY_STANDALONE
-                return Path.GetDirectoryName(Application.dataPath);
+            var dir = Path.GetDirectoryName(Application.dataPath);
 #else
-                return Application.persistentDataPath;
+            var dir =  Application.persistentDataPath;
 #endif
+            if (string.IsNullOrEmpty(subFolder))
+            {
+                return dir;
+            }
+            else
+            {
+                return Path.Combine(dir, subFolder);
             }
         }
     }
