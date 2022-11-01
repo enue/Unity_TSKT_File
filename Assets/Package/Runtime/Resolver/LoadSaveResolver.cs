@@ -17,13 +17,30 @@ namespace TSKT.Files
 
     public class FileResolver : ILoadSaveResolver
     {
+        public enum UserFolder
+        {
+            ApplicationDirectory,
+            MyDocuments,
+            AppDataLocalLow,
+        }
+
         static int processCount = 0;
 
         public readonly string directory;
 
+        public FileResolver(UserFolder type)
+        {
+            directory = type switch
+            {
+                UserFolder.AppDataLocalLow => UserFolderUtil.AppDataLoalLowCompanyProduct,
+                UserFolder.MyDocuments => UserFolderUtil.MyDocumentsCompanyProduct,
+                UserFolder.ApplicationDirectory => UserFolderUtil.ApplicationDirectory,
+                _ => throw new System.NotImplementedException(),
+            };
+        }
         public FileResolver(string? directory, bool userFolder = false)
         {
-            var dir = userFolder ? Application.persistentDataPath : UserFolderUtil.AppDirectory;
+            var dir = userFolder ? Application.persistentDataPath : UserFolderUtil.ApplicationDirectory;
 
             if (string.IsNullOrEmpty(directory))
             {
@@ -59,7 +76,7 @@ namespace TSKT.Files
             ++processCount;
             try
             {
-                Directory.CreateDirectory(directory);
+                UserFolder.CreateDirectory(directory);
 
                 var fullPath = GetPath(filename);
                 await System.IO.File.WriteAllBytesAsync(fullPath, data);
@@ -72,7 +89,7 @@ namespace TSKT.Files
 
         public void SaveBytes(string filename, byte[] data)
         {
-            Directory.CreateDirectory(directory);
+            UserFolder.CreateDirectory(directory);
             var fullPath = GetPath(filename);
             System.IO.File.WriteAllBytes(fullPath, data);
         }

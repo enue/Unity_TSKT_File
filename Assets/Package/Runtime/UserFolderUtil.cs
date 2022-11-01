@@ -28,7 +28,7 @@ namespace TSKT.Files
             }
         }
         public static string AppDataLoalLowCompanyProduct => Application.persistentDataPath;
-        public static string AppDirectory
+        public static string ApplicationDirectory
         {
             get
             {
