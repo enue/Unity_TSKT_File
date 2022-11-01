@@ -34,13 +34,13 @@ namespace TSKT.Files
             {
                 UserFolder.AppDataLocalLow => UserFolderUtil.AppDataLoalLowCompanyProduct,
                 UserFolder.MyDocuments => UserFolderUtil.MyDocumentsCompanyProduct,
-                UserFolder.ApplicationDirectory => UserFolderUtil.ApplicationDirectory,
+                UserFolder.ApplicationDirectory => UserFolderUtil.GetApplicationDirectory(null),
                 _ => throw new System.NotImplementedException(),
             };
         }
         public FileResolver(string? directory, bool userFolder = false)
         {
-            var dir = userFolder ? Application.persistentDataPath : UserFolderUtil.ApplicationDirectory;
+            var dir = userFolder ? Application.persistentDataPath : UserFolderUtil.GetApplicationDirectory(null);
 
             if (string.IsNullOrEmpty(directory))
             {
