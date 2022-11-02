@@ -10,6 +10,7 @@ namespace TSKT
 {
     public class FileIO
     {
+        readonly Dictionary<string, byte[]> cache = new();
         public Files.ILoadSaveResolver Resolver { get; }
         public Files.ISerializeResolver SerialzieResolver { get; }
 
@@ -23,6 +24,7 @@ namespace TSKT
         {
             var bytes = SerialzieResolver.Serialize(obj);
             Resolver.SaveBytes(filename, bytes);
+            cache[filename] = bytes;
             return bytes;
         }
 
@@ -34,6 +36,7 @@ namespace TSKT
             try
             {
                 var bytes = await SerialzieResolver.SerializeAsync(obj);
+                cache[filename] = bytes;
                 progress?.Report(0.5f);
                 using (new PreventFromQuitting(null))
                 {
@@ -57,6 +60,13 @@ namespace TSKT
             {
                 return false;
             }
+            foreach (var it in filenames)
+            {
+                if (cache.ContainsKey(it))
+                {
+                    return true;
+                }
+            }
             return Resolver.AnyExist(filenames);
         }
 
@@ -64,20 +74,22 @@ namespace TSKT
         {
             try
             {
-                byte[] bytes;
-                try
+                if (!cache.TryGetValue(filename, out var bytes))
                 {
-                    var result = await Resolver.LoadBytesAsync(filename);
-                    if (!result.Succeeded)
+                    try
                     {
-                        return result.CreateFailed<T>();
+                        var result = await Resolver.LoadBytesAsync(filename);
+                        if (!result.Succeeded)
+                        {
+                            return result.CreateFailed<T>();
+                        }
+                        bytes = result.value;
                     }
-                    bytes = result.value;
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogException(ex);
-                    return LoadResult<T>.CreateError(ex);
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogException(ex);
+                        return LoadResult<T>.CreateError(ex);
+                    }
                 }
 
                 progress?.Report(0.5f);
@@ -102,20 +114,22 @@ namespace TSKT
 
         public LoadResult<T> Load<T>(string filename)
         {
-            byte[] bytes;
-            try
+            if (!cache.TryGetValue(filename, out var bytes))
             {
-                var result = Resolver.LoadBytes(filename);
-                if (!result.Succeeded)
+                try
                 {
-                    return result.CreateFailed<T>();
+                    var result = Resolver.LoadBytes(filename);
+                    if (!result.Succeeded)
+                    {
+                        return result.CreateFailed<T>();
+                    }
+                    bytes = result.value;
                 }
-                bytes = result.value;
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogException(ex);
-                return LoadResult<T>.CreateError(ex);
+                catch (System.Exception ex)
+                {
+                    Debug.LogException(ex);
+                    return LoadResult<T>.CreateError(ex);
+                }
             }
 
             try
