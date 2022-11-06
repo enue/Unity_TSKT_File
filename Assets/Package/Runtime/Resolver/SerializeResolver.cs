@@ -65,20 +65,42 @@ namespace TSKT.Files
 
         public T Deserialize<T>(byte[] bytes)
         {
-            if (ShouldCrypt)
+            try
             {
-                bytes = CryptUtil.Decrypt(bytes, password!, salt!, iterations);
+                var buffer = bytes;
+                if (ShouldCrypt)
+                {
+                    buffer = CryptUtil.Decrypt(buffer, password!, salt!, iterations);
+                }
+                string json;
+                if (compress)
+                {
+                    json = CompressUtil.DecompressToString(buffer);
+                }
+                else
+                {
+                    json = System.Text.Encoding.UTF8.GetString(buffer);
+                }
+                return JsonUtility.FromJson<T>(json);
             }
-            string json;
-            if (compress)
+            catch
             {
-                json = CompressUtil.DecompressToString(bytes);
+                var buffer = bytes;
+                if (ShouldCrypt)
+                {
+                    buffer = CryptUtil.DecryptByCommonIV(buffer, password!, salt!, iterations);
+                }
+                string json;
+                if (compress)
+                {
+                    json = CompressUtil.DecompressToString(buffer);
+                }
+                else
+                {
+                    json = System.Text.Encoding.UTF8.GetString(bytes);
+                }
+                return JsonUtility.FromJson<T>(json);
             }
-            else
-            {
-                json = System.Text.Encoding.UTF8.GetString(bytes);
-            }
-            return JsonUtility.FromJson<T>(json);
         }
 
         public UniTask<T> DeserializeAsync<T>(byte[] bytes)

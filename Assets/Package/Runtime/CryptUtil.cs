@@ -55,23 +55,25 @@ namespace TSKT
         {
             using (var aes = CreateAes(key, salt, iterations))
             {
-                try
+                var iv = encryptedBytes.AsSpan(0, aes.BlockSize / 8).ToArray();
+                aes.IV = iv;
+                using (var decryptor = aes.CreateDecryptor())
                 {
-                    var iv = encryptedBytes.AsSpan(0, aes.BlockSize / 8).ToArray();
-                    aes.IV = iv;
-                    using (var decryptor = aes.CreateDecryptor())
-                    {
-                        return decryptor.TransformFinalBlock(encryptedBytes, iv.Length, encryptedBytes.Length - iv.Length);
-                    }
+                    return decryptor.TransformFinalBlock(encryptedBytes, iv.Length, encryptedBytes.Length - iv.Length);
                 }
-                catch (CryptographicException)
+            }
+        }
+
+        [System.Obsolete]
+        public static byte[] DecryptByCommonIV(byte[] encryptedBytes, string key, byte[] salt, int iterations)
+        {
+            using (var aes = CreateAes(key, salt, iterations))
+            {
+                GenerateKeyAndIV(out _, out var iv, key, salt, iterations, aes.KeySize, aes.BlockSize);
+                aes.IV = iv;
+                using (var decryptor = aes.CreateDecryptor())
                 {
-                    GenerateKeyAndIV(out _, out var iv, key, salt, iterations, aes.KeySize, aes.BlockSize);
-                    aes.IV = iv;
-                    using (var decryptor = aes.CreateDecryptor())
-                    {
-                        return decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
-                    }
+                    return decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
                 }
             }
         }
