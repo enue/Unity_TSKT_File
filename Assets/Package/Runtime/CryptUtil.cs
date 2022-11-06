@@ -22,7 +22,7 @@ namespace TSKT
         {
             var result = Aes.Create();
 
-            result.KeySize = 256;
+            result.KeySize = 128;
             result.BlockSize = 128;
             GenerateKeyAndIV(out var key, out var iv, password, salt, iterations, result.KeySize, result.BlockSize);
             result.Key = key;
@@ -30,67 +30,22 @@ namespace TSKT
             return result;
         }
 
-        public static byte[] EncryptByAes(byte[] bytes, string password, byte[] salt, int iterations)
-        {
-            using (var rijndael = CreateAes(password, salt, iterations))
-            {
-                using (var encryptor = rijndael.CreateEncryptor())
-                {
-                    return encryptor.TransformFinalBlock(bytes, 0, bytes.Length);
-                }
-            }
-        }
-        public static byte[] DecryptByAes(byte[] encryptedBytes, string key, byte[] salt, int iterations)
-        {
-            using (var rijndael = CreateAes(key, salt, iterations))
-            {
-                using (var decryptor = rijndael.CreateDecryptor())
-                {
-                    return decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
-                }
-            }
-        }
-
-        [System.Obsolete]
-        public static RijndaelManaged CreateRijndael(string password, string salt, int iterations)
-        {
-            return CreateRijndael(password, Encoding.UTF8.GetBytes(salt), iterations);
-        }
-
-        [System.Obsolete]
-        public static RijndaelManaged CreateRijndael(string password, byte[] salt, int iterations)
-        {
-            var rijndael = new RijndaelManaged
-            {
-                KeySize = 128,
-                BlockSize = 128
-            };
-            GenerateKeyAndIV(out var key, out var iv, password, salt, iterations, rijndael.KeySize, rijndael.BlockSize);
-            rijndael.Key = key;
-            rijndael.IV = iv;
-
-            return rijndael;
-        }
-
-        [System.Obsolete]
         public static byte[] Encrypt(byte[] bytes, string password, byte[] salt, int iterations)
         {
-            using (var rijndael = CreateRijndael(password, salt, iterations))
+            using (var aes = CreateAes(password, salt, iterations))
             {
-                using (var encryptor = rijndael.CreateEncryptor())
+                using (var encryptor = aes.CreateEncryptor())
                 {
                     return encryptor.TransformFinalBlock(bytes, 0, bytes.Length);
                 }
             }
         }
 
-
-        [System.Obsolete]
         public static byte[] Decrypt(byte[] encryptedBytes, string key, byte[] salt, int iterations)
         {
-            using (var rijndael = CreateRijndael(key, salt, iterations))
+            using (var aes = CreateAes(key, salt, iterations))
             {
-                using (var decryptor = rijndael.CreateDecryptor())
+                using (var decryptor = aes.CreateDecryptor())
                 {
                     return decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
                 }
