@@ -6,13 +6,6 @@ using Cysharp.Threading.Tasks;
 
 namespace TSKT.Files
 {
-    public enum Compression
-    {
-        None,
-        Deflate,
-        Brotli,
-    }
-
     public interface ISerializeResolver
     {
         byte[] Serialize<T>(T obj);
@@ -26,35 +19,31 @@ namespace TSKT.Files
         readonly string? password;
         readonly byte[]? salt;
         readonly int iterations;
-        readonly Compression compress;
+        readonly bool compress;
         public bool ShouldCrypt => password != null;
 
         public JsonResolver()
         {
         }
 
-        public JsonResolver(string password, byte[] salt, int iterations, Compression compression = Compression.Deflate)
+        public JsonResolver(string password, byte[] salt, int iterations)
         {
             this.password = password;
             this.salt = salt;
             this.iterations = iterations;
-            compress = compression;
+            compress = ShouldCrypt;
         }
 
-        public JsonResolver(Compression compress)
+        public JsonResolver(bool compress)
         {
             this.compress = compress;
         }
 
         public byte[] Serialize<T>(T obj)
         {
-            var json = JsonUtility.ToJson(obj, prettyPrint: compress == Compression.None && !ShouldCrypt);
+            var json = JsonUtility.ToJson(obj, prettyPrint: !compress && !ShouldCrypt);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-            if (compress == Compression.Deflate)
-            {
-                bytes = CompressUtil.Compress(bytes);
-            }
-            else if (compress == Compression.Brotli)
+            if (compress)
             {
                 bytes = CompressUtil.CompressByBrotli(bytes);
             }
@@ -83,13 +72,16 @@ namespace TSKT.Files
                 {
                     buffer = CryptUtil.Decrypt(buffer, password!, salt!, iterations);
                 }
-                if (compress == Compression.Deflate)
+                if (compress)
                 {
-                    buffer = CompressUtil.Decompress(buffer);
-                }
-                else if (compress == Compression.Brotli)
-                {
-                    buffer = CompressUtil.DecompressByBrotli(buffer);
+                    try
+                    {
+                        buffer = CompressUtil.DecompressByBrotli(buffer);
+                    }
+                    catch (System.Exception)
+                    {
+                        buffer = CompressUtil.Decompress(buffer);
+                    }
                 }
                 var json = System.Text.Encoding.UTF8.GetString(buffer);
                 return JsonUtility.FromJson<T>(json);
@@ -101,13 +93,16 @@ namespace TSKT.Files
                 {
                     buffer = CryptUtil.DecryptByCommonIV(buffer, password!, salt!, iterations);
                 }
-                if (compress == Compression.Deflate)
+                if (compress)
                 {
-                    buffer = CompressUtil.Decompress(buffer);
-                }
-                else if (compress == Compression.Brotli)
-                {
-                    buffer = CompressUtil.DecompressByBrotli(buffer);
+                    try
+                    {
+                        buffer = CompressUtil.DecompressByBrotli(buffer);
+                    }
+                    catch (System.Exception)
+                    {
+                        buffer = CompressUtil.Decompress(buffer);
+                    }
                 }
                 var json = System.Text.Encoding.UTF8.GetString(buffer);
                 return JsonUtility.FromJson<T>(json);
