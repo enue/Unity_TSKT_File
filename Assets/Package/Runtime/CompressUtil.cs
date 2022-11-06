@@ -11,7 +11,7 @@ namespace TSKT
 {
     public static class CompressUtil
     {
-        public static byte[] Compress(ReadOnlySpan<byte> bytes)
+        public static byte[] CompressByBrotli(ReadOnlySpan<byte> bytes)
         {
             using (var compressed = new MemoryStream())
             {
@@ -23,30 +23,38 @@ namespace TSKT
             }
         }
 
-        public static byte[] Decompress(byte[] bytes)
+        public static byte[] DecompressByBrotli(byte[] bytes)
         {
-            try
+            using (var compressed = new MemoryStream(bytes))
             {
-                using (var compressed = new MemoryStream(bytes))
+                using (var stream = new BrotliStream(compressed, CompressionMode.Decompress))
                 {
-                    using (var stream = new BrotliStream(compressed, CompressionMode.Decompress))
-                    {
-                        var decompressed = new MemoryStream();
-                        stream.CopyTo(decompressed);
-                        return decompressed.ToArray();
-                    }
+                    var decompressed = new MemoryStream();
+                    stream.CopyTo(decompressed);
+                    return decompressed.ToArray();
                 }
             }
-            catch
+        }
+        public static byte[] Compress(ReadOnlySpan<byte> bytes)
+        {
+            using (var compressed = new MemoryStream())
             {
-                using (var compressed = new MemoryStream(bytes))
+                using (var stream = new DeflateStream(compressed, CompressionMode.Compress))
                 {
-                    using (var deflateStream = new DeflateStream(compressed, CompressionMode.Decompress))
-                    {
-                        var decompressed = new MemoryStream();
-                        deflateStream.CopyTo(decompressed);
-                        return decompressed.ToArray();
-                    }
+                    stream.Write(bytes);
+                }
+                return compressed.ToArray();
+            }
+        }
+        public static byte[] Decompress(byte[] bytes)
+        {
+            using (var compressed = new MemoryStream(bytes))
+            {
+                using (var deflateStream = new DeflateStream(compressed, CompressionMode.Decompress))
+                {
+                    var decompressed = new MemoryStream();
+                    deflateStream.CopyTo(decompressed);
+                    return decompressed.ToArray();
                 }
             }
         }
