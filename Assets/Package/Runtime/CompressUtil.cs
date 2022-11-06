@@ -37,7 +37,7 @@ namespace TSKT
                     }
                 }
             }
-            catch (InvalidOperationException)
+            catch
             {
                 using (var compressed = new MemoryStream(bytes))
                 {
