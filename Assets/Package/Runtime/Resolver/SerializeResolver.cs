@@ -49,7 +49,7 @@ namespace TSKT.Files
             }
             if (ShouldCrypt)
             {
-                bytes = CryptUtil.Encrypt(bytes, password!, salt!, iterations);
+                bytes = CryptUtil.EncryptByAes(bytes, password!, salt!, iterations);
             }
             return bytes;
         }
@@ -67,7 +67,14 @@ namespace TSKT.Files
         {
             if (ShouldCrypt)
             {
-                bytes = CryptUtil.Decrypt(bytes, password!, salt!, iterations);
+                try
+                {
+                    bytes = CryptUtil.DecryptByAes(bytes, password!, salt!, iterations);
+                }
+                catch (System.Security.Cryptography.CryptographicException)
+                {
+                    bytes = CryptUtil.Decrypt(bytes, password!, salt!, iterations);
+                }
             }
             string json;
             if (compress)
