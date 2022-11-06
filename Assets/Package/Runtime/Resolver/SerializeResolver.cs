@@ -72,15 +72,11 @@ namespace TSKT.Files
                 {
                     buffer = CryptUtil.Decrypt(buffer, password!, salt!, iterations);
                 }
-                string json;
                 if (compress)
                 {
-                    json = CompressUtil.DecompressToString(buffer);
+                    buffer = CompressUtil.Decompress(buffer);
                 }
-                else
-                {
-                    json = System.Text.Encoding.UTF8.GetString(buffer);
-                }
+                var json = System.Text.Encoding.UTF8.GetString(buffer);
                 return JsonUtility.FromJson<T>(json);
             }
             catch
@@ -90,15 +86,11 @@ namespace TSKT.Files
                 {
                     buffer = CryptUtil.DecryptByCommonIV(buffer, password!, salt!, iterations);
                 }
-                string json;
                 if (compress)
                 {
-                    json = CompressUtil.DecompressToString(buffer);
+                    buffer = CompressUtil.Decompress(buffer);
                 }
-                else
-                {
-                    json = System.Text.Encoding.UTF8.GetString(bytes);
-                }
+                var json = System.Text.Encoding.UTF8.GetString(buffer);
                 return JsonUtility.FromJson<T>(json);
             }
         }
