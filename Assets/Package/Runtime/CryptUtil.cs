@@ -6,6 +6,8 @@ using System.Text;
 using System.IO;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using Codice.CM.Common.Encryption;
+using System.Buffers;
 
 namespace TSKT
 {
@@ -35,37 +37,37 @@ namespace TSKT
             return result;
         }
 
-        public static byte[] Encrypt(byte[] bytes, string password, byte[] salt, int iterations)
+        public static ReadOnlyMemory<byte> Encrypt(ReadOnlyMemory<byte> bytes, string password, byte[] salt, int iterations)
         {
             using (var aes = CreateAes(password, salt, iterations))
             {
                 using (var encryptor = aes.CreateEncryptor())
                 {
                     var iv = aes.IV;
-                    var body = encryptor.TransformFinalBlock(bytes, 0, bytes.Length);
-                    var result = new byte[iv.Length + body.Length];
-                    Array.Copy(iv, result, iv.Length);
-                    Array.Copy(body, 0, result, iv.Length, body.Length);
-                    return result;
+                    var body = encryptor.TransformFinalBlock(bytes.ToArray(), 0, bytes.Length);
+                    var writer = new ArrayBufferWriter<byte>(iv.Length + body.Length);
+                    writer.Write(iv);
+                    writer.Write(body);
+                    return writer.WrittenMemory;
                 }
             }
         }
 
-        public static byte[] Decrypt(byte[] encryptedBytes, string key, byte[] salt, int iterations)
+        public static byte[] Decrypt(ReadOnlyMemory<byte> encryptedBytes, string key, byte[] salt, int iterations)
         {
             using (var aes = CreateAes(key, salt, iterations))
             {
-                var iv = encryptedBytes.AsSpan(0, aes.BlockSize / 8).ToArray();
+                var iv = encryptedBytes.Slice(0, aes.BlockSize / 8).ToArray();
                 aes.IV = iv;
                 using (var decryptor = aes.CreateDecryptor())
                 {
-                    return decryptor.TransformFinalBlock(encryptedBytes, iv.Length, encryptedBytes.Length - iv.Length);
+                    return decryptor.TransformFinalBlock(encryptedBytes.ToArray(), iv.Length, encryptedBytes.Length - iv.Length);
                 }
             }
         }
 
         [System.Obsolete]
-        public static byte[] DecryptByCommonIV(byte[] encryptedBytes, string key, byte[] salt, int iterations)
+        public static byte[] DecryptByCommonIV(ReadOnlyMemory<byte> encryptedBytes, string key, byte[] salt, int iterations)
         {
             using (var aes = CreateAes(key, salt, iterations))
             {
@@ -73,7 +75,7 @@ namespace TSKT
                 aes.IV = iv;
                 using (var decryptor = aes.CreateDecryptor())
                 {
-                    return decryptor.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length);
+                    return decryptor.TransformFinalBlock(encryptedBytes.ToArray(), 0, encryptedBytes.Length);
                 }
             }
         }

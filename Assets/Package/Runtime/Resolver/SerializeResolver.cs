@@ -5,15 +5,16 @@ using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System;
 using System.Linq;
+using System.Buffers;
 
 namespace TSKT.Files
 {
     public interface ISerializeResolver
     {
-        byte[] Serialize<T>(T obj);
-        UniTask<byte[]> SerializeAsync<T>(T obj);
-        T Deserialize<T>(byte[] bytes);
-        UniTask<T> DeserializeAsync<T>(byte[] bytes);
+        ReadOnlyMemory<byte> Serialize<T>(T obj);
+        UniTask<ReadOnlyMemory<byte>> SerializeAsync<T>(T obj);
+        T Deserialize<T>(ReadOnlyMemory<byte> bytes);
+        UniTask<T> DeserializeAsync<T>(ReadOnlyMemory<byte> bytes);
     }
 
     public class JsonResolver : ISerializeResolver
@@ -41,22 +42,22 @@ namespace TSKT.Files
             this.compress = compress;
         }
 
-        public byte[] Serialize<T>(T obj)
+        public ReadOnlyMemory<byte> Serialize<T>(T obj)
         {
             var json = JsonUtility.ToJson(obj, prettyPrint: !compress && !ShouldCrypt);
-            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var bytes = new ReadOnlyMemory<byte>(System.Text.Encoding.UTF8.GetBytes(json));
 
             if (compress)
             {
-                bytes = CompressUtil.CompressByBrotli(bytes);
+                bytes = CompressUtil.CompressByBrotli(new ReadOnlySequence<byte>(bytes));
 
                 using (var sha = new System.Security.Cryptography.SHA256Managed())
                 {
-                    var hashData = sha.ComputeHash(bytes);
-                    var combined = new byte[bytes.Length + hashData.Length];
-                    Array.Copy(hashData, combined, hashData.Length);
-                    Array.Copy(bytes, 0, combined, hashData.Length, bytes.Length);
-                    bytes = combined;
+                    var hashData = sha.ComputeHash(bytes.ToArray());
+                    var writer = new ArrayBufferWriter<byte>(bytes.Length + hashData.Length);
+                    writer.Write(hashData);
+                    writer.Write(bytes.Span);
+                    bytes = writer.WrittenMemory;
                 }
             }
 
@@ -67,7 +68,7 @@ namespace TSKT.Files
             return bytes;
         }
 
-        public UniTask<byte[]> SerializeAsync<T>(T obj)
+        public UniTask<ReadOnlyMemory<byte>> SerializeAsync<T>(T obj)
         {
 #if UNITY_WEBGL
             return UniTask.FromResult(Serialize(obj));
@@ -76,7 +77,7 @@ namespace TSKT.Files
 #endif
         }
 
-        public T Deserialize<T>(byte[] bytes)
+        public T Deserialize<T>(ReadOnlyMemory<byte> bytes)
         {
             try
             {
@@ -89,24 +90,24 @@ namespace TSKT.Files
                 if (compress)
                 {
                     // decompressする前にハッシュチェックを行う。というのもbrotliに雑なデータを食わせるとクラッシュする。
-                    var signature = buffer.AsSpan(0, 256 / 8);
-                    buffer = buffer.AsSpan(256 / 8).ToArray();
+                    var signature = buffer.Slice(0, 256 / 8);
+                    buffer = buffer.Slice(256 / 8);
                     using (var sha = new System.Security.Cryptography.SHA256Managed())
                     {
-                        var hashData = sha.ComputeHash(buffer);
-                        if (!signature.SequenceEqual(hashData))
+                        var hashData = sha.ComputeHash(buffer.ToArray());
+                        if (!signature.Span.SequenceEqual(hashData))
                         {
                             throw new Exception();
                         }
                     }
 
-                    buffer = CompressUtil.DecompressByBrotli(buffer);
+                    buffer = CompressUtil.DecompressByBrotli(new ReadOnlySequence<byte>(buffer));
                 }
 
-                var json = System.Text.Encoding.UTF8.GetString(buffer);
+                var json = System.Text.Encoding.UTF8.GetString(buffer.Span);
                 return JsonUtility.FromJson<T>(json);
             }
-            catch
+            catch (Exception)
             {
                 var buffer = bytes;
                 if (ShouldCrypt)
@@ -115,14 +116,14 @@ namespace TSKT.Files
                 }
                 if (compress)
                 {
-                    buffer = CompressUtil.Decompress(buffer);
+                    buffer = CompressUtil.Decompress(buffer.ToArray());
                 }
-                var json = System.Text.Encoding.UTF8.GetString(buffer);
+                var json = System.Text.Encoding.UTF8.GetString(buffer.Span);
                 return JsonUtility.FromJson<T>(json);
             }
         }
 
-        public UniTask<T> DeserializeAsync<T>(byte[] bytes)
+        public UniTask<T> DeserializeAsync<T>(ReadOnlyMemory<byte> bytes)
         {
 #if UNITY_WEBGL
             return UniTask.FromResult(Deserialize<T>(bytes));

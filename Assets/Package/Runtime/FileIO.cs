@@ -5,12 +5,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using System;
 
 namespace TSKT
 {
     public class FileIO
     {
-        readonly Dictionary<string, byte[]> cache = new();
+        readonly Dictionary<string, ReadOnlyMemory<byte>> cache = new();
         public Files.ILoadSaveResolver Resolver { get; }
         public Files.ISerializeResolver SerialzieResolver { get; }
 
@@ -20,10 +21,10 @@ namespace TSKT
             SerialzieResolver = serializeResolver;
         }
 
-        public byte[] Save<T>(string filename, T obj)
+        public ReadOnlyMemory<byte> Save<T>(string filename, T obj)
         {
             var bytes = SerialzieResolver.Serialize(obj);
-            Resolver.SaveBytes(filename, bytes);
+            Resolver.SaveBytes(filename, bytes.ToArray());
             cache[filename] = bytes;
             return bytes;
         }
@@ -31,7 +32,7 @@ namespace TSKT
         /// <summary>
         /// シリアライズからファイルアクセスまですべて非同期で行う。途中でタスクキルされるとファイルが壊れることがあるので注意。対応済みの場合のみ採用すること
         /// </summary>
-        public async UniTask<byte[]> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
+        public async UniTask<ReadOnlyMemory<byte>> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
         {
             try
             {
@@ -40,7 +41,7 @@ namespace TSKT
                 progress?.Report(0.5f);
                 using (new PreventFromQuitting(null))
                 {
-                    await Resolver.SaveBytesAsync(filename, bytes);
+                    await Resolver.SaveBytesAsync(filename, bytes.ToArray());
                 }
                 return bytes;
             }
