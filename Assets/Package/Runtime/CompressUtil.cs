@@ -29,7 +29,7 @@ namespace TSKT
             {
                 using (var stream = new BrotliStream(compressed, CompressionMode.Decompress))
                 {
-                    var decompressed = new MemoryStream();
+                    using var decompressed = new MemoryStream();
                     stream.CopyTo(decompressed);
                     return decompressed.ToArray();
                 }
@@ -52,7 +52,7 @@ namespace TSKT
             {
                 using (var deflateStream = new DeflateStream(compressed, CompressionMode.Decompress))
                 {
-                    var decompressed = new MemoryStream();
+                    using var decompressed = new MemoryStream();
                     deflateStream.CopyTo(decompressed);
                     return decompressed.ToArray();
                 }

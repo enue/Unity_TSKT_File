@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -48,6 +48,8 @@ namespace TSKT.Files
 
             if (compress)
             {
+                bytes = CompressUtil.CompressByBrotli(bytes);
+
                 using (var sha = new System.Security.Cryptography.SHA256Managed())
                 {
                     var hashData = sha.ComputeHash(bytes);
@@ -55,7 +57,6 @@ namespace TSKT.Files
                     Array.Copy(hashData, combined, hashData.Length);
                     Array.Copy(bytes, 0, combined, hashData.Length, bytes.Length);
                     bytes = combined;
-                    bytes = CompressUtil.CompressByBrotli(bytes);
                 }
             }
 
@@ -87,8 +88,7 @@ namespace TSKT.Files
 
                 if (compress)
                 {
-                    buffer = CompressUtil.DecompressByBrotli(buffer);
-
+                    // decompressする前にハッシュチェックを行う。というのもbrotliに雑なデータを食わせるとクラッシュする。
                     var signature = buffer.AsSpan(0, 256 / 8);
                     buffer = buffer.AsSpan(256 / 8).ToArray();
                     using (var sha = new System.Security.Cryptography.SHA256Managed())
@@ -99,6 +99,8 @@ namespace TSKT.Files
                             throw new Exception();
                         }
                     }
+
+                    buffer = CompressUtil.DecompressByBrotli(buffer);
                 }
 
                 var json = System.Text.Encoding.UTF8.GetString(buffer);
