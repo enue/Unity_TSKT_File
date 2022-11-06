@@ -77,7 +77,12 @@ namespace TSKT.Files
                     buffer = CompressUtil.DecompressByBrotli(buffer);
                 }
                 var json = System.Text.Encoding.UTF8.GetString(buffer);
-                return JsonUtility.FromJson<T>(json);
+                if (string.IsNullOrEmpty(json))
+                {
+                    throw new System.Exception();
+                }
+                var result = JsonUtility.FromJson<T>(json);
+                return result;
             }
             catch
             {
@@ -91,6 +96,10 @@ namespace TSKT.Files
                     buffer = CompressUtil.Decompress(buffer);
                 }
                 var json = System.Text.Encoding.UTF8.GetString(buffer);
+                if (string.IsNullOrEmpty(json))
+                {
+                    throw new System.Exception();
+                }
                 return JsonUtility.FromJson<T>(json);
             }
         }
