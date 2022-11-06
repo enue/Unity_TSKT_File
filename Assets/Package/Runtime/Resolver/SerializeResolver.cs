@@ -74,7 +74,14 @@ namespace TSKT.Files
                 }
                 if (compress)
                 {
-                    buffer = CompressUtil.DecompressByBrotli(buffer);
+                    try
+                    {
+                        buffer = CompressUtil.DecompressByBrotli(buffer);
+                    }
+                    catch (System.Exception)
+                    {
+                        buffer = CompressUtil.Decompress(buffer);
+                    }
                 }
                 var json = System.Text.Encoding.UTF8.GetString(buffer);
                 return JsonUtility.FromJson<T>(json);
@@ -88,7 +95,14 @@ namespace TSKT.Files
                 }
                 if (compress)
                 {
-                    buffer = CompressUtil.Decompress(buffer);
+                    try
+                    {
+                        buffer = CompressUtil.DecompressByBrotli(buffer);
+                    }
+                    catch (System.Exception)
+                    {
+                        buffer = CompressUtil.Decompress(buffer);
+                    }
                 }
                 var json = System.Text.Encoding.UTF8.GetString(buffer);
                 return JsonUtility.FromJson<T>(json);
