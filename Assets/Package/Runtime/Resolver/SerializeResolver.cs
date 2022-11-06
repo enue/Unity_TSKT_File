@@ -53,9 +53,13 @@ namespace TSKT.Files
 
                 using (var sha = new System.Security.Cryptography.SHA256Managed())
                 {
-                    var hashData = sha.ComputeHash(bytes.ToArray());
-                    var writer = new ArrayBufferWriter<byte>(bytes.Length + hashData.Length);
-                    writer.Write(hashData);
+                    var hashSize = 256 / 8;
+                    var writer = new ArrayBufferWriter<byte>(bytes.Length + hashSize);
+                    if (!sha.TryComputeHash(bytes.Span, writer.GetSpan(hashSize), out var written))
+                    {
+                        throw new Exception();
+                    }
+                    writer.Advance(written);
                     writer.Write(bytes.Span);
                     bytes = writer.WrittenMemory;
                 }
@@ -90,12 +94,18 @@ namespace TSKT.Files
                 if (compress)
                 {
                     // decompressする前にハッシュチェックを行う。というのもbrotliに雑なデータを食わせるとクラッシュする。
-                    var signature = buffer.Slice(0, 256 / 8);
-                    buffer = buffer.Slice(256 / 8);
                     using (var sha = new System.Security.Cryptography.SHA256Managed())
                     {
-                        var hashData = sha.ComputeHash(buffer.ToArray());
-                        if (!signature.Span.SequenceEqual(hashData))
+                        var hashSize = 256 / 8;
+                        var signature = buffer[..hashSize];
+                        buffer = buffer[hashSize..];
+                        var hashData = new ArrayBufferWriter<byte>();
+                        if (!sha.TryComputeHash(buffer.Span, hashData.GetSpan(hashSize), out var written))
+                        {
+                            throw new Exception();
+                        }
+                        hashData.Advance(written);
+                        if (!signature.Span.SequenceEqual(hashData.WrittenSpan))
                         {
                             throw new Exception();
                         }
