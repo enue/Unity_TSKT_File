@@ -21,11 +21,11 @@ namespace TSKT
             SerialzieResolver = serializeResolver;
         }
 
-        public ReadOnlyMemory<byte> Save<T>(string filename, T obj)
+        public ReadOnlySpan<byte> Save<T>(string filename, T obj)
         {
             var bytes = SerialzieResolver.Serialize(obj);
             Resolver.SaveBytes(filename, bytes.ToArray());
-            cache[filename] = bytes;
+            cache[filename] = bytes.ToArray();
             return bytes;
         }
 
@@ -135,7 +135,7 @@ namespace TSKT
 
             try
             {
-                var t = SerialzieResolver.Deserialize<T>(bytes);
+                var t = SerialzieResolver.Deserialize<T>(bytes.Span);
                 return new LoadResult<T>(t);
             }
             catch (System.Exception ex)

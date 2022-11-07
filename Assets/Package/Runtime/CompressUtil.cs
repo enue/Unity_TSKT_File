@@ -12,12 +12,12 @@ namespace TSKT
 {
     public static class CompressUtil
     {
-        public static ReadOnlyMemory<byte> CompressByBrotli(ReadOnlySequence<byte> sequence)
+        public static ReadOnlySpan<byte> CompressByBrotli(ReadOnlySequence<byte> sequence)
         {
             var length = BrotliEncoder.GetMaxCompressedLength((int)sequence.Length);
             var writer = new ArrayBufferWriter<byte>(length);
             CompressByBrotli(sequence, writer);
-            return writer.WrittenMemory;
+            return writer.WrittenSpan;
         }
 
         public static void CompressByBrotli(ReadOnlySequence<byte> sequence, IBufferWriter<byte> writer)
@@ -46,11 +46,11 @@ namespace TSKT
             }
         }
 
-        public static ReadOnlyMemory<byte> DecompressByBrotli(ReadOnlySequence<byte> sequence)
+        public static ReadOnlySpan<byte> DecompressByBrotli(ReadOnlySequence<byte> sequence)
         {
             var writer = new ArrayBufferWriter<byte>();
             DecompressByBrotli(sequence, writer);
-            return writer.WrittenMemory;
+            return writer.WrittenSpan;
         }
         public static void DecompressByBrotli(ReadOnlySequence<byte> sequence, IBufferWriter<byte> writer)
         {

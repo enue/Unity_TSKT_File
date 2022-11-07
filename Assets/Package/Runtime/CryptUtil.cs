@@ -33,7 +33,7 @@ namespace TSKT
             return result;
         }
 
-        public static ReadOnlyMemory<byte> Encrypt(ReadOnlySpan<byte> bytes, string password, byte[] salt, int iterations)
+        public static ReadOnlySpan<byte> Encrypt(ReadOnlySpan<byte> bytes, string password, byte[] salt, int iterations)
         {
             using (var aes = CreateAes(password, salt, iterations))
             {
@@ -44,7 +44,7 @@ namespace TSKT
                     var writer = new ArrayBufferWriter<byte>(iv.Length + body.Length);
                     writer.Write(iv);
                     writer.Write(body);
-                    return writer.WrittenMemory;
+                    return writer.WrittenSpan;
                 }
             }
         }
