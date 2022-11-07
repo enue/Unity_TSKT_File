@@ -104,7 +104,7 @@ namespace TSKT.Files
                         var hashSize = 256 / 8;
                         var signature = buffer[..hashSize];
                         buffer = buffer[hashSize..];
-                        var hashData = new ArrayBufferWriter<byte>();
+                        var hashData = new ArrayBufferWriter<byte>(hashSize);
                         if (!sha.TryComputeHash(buffer, hashData.GetSpan(hashSize), out var written))
                         {
                             throw new Exception();
