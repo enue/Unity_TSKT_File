@@ -11,9 +11,9 @@ namespace TSKT
         static async public UniTask<T?> LoadAsync<T>(string path, System.IProgress<float>? progress = null)
             where T : Object
         {
-            var request = Resources.LoadAsync<T>(path);
-            await request.ToUniTask(progress);
-            return request.asset as T;
+            var result = await Resources.LoadAsync<T>(path);
+            progress?.Report(1f);
+            return result as T;
         }
     }
 }
