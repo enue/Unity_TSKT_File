@@ -2,11 +2,7 @@
 using UnityEngine;
 using System.Collections;
 using System;
-using System.Text;
-using System.IO;
-using System.IO.Compression;
 using System.Security.Cryptography;
-using Codice.CM.Common.Encryption;
 using System.Buffers;
 
 namespace TSKT
