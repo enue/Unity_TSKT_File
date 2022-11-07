@@ -16,7 +16,7 @@ namespace TSKT.Tests
         {
             var bytesSalt = Encoding.UTF8.GetBytes(salt);
             var encData = TSKT.CryptUtil.Encrypt(CompressUtil.Compress(Encoding.UTF8.GetBytes(data)), password, bytesSalt, iterations);
-            var decData = CompressUtil.Decompress(TSKT.CryptUtil.Decrypt(encData, password, bytesSalt, iterations));
+            var decData = CompressUtil.Decompress(TSKT.CryptUtil.Decrypt(encData.Span, password, bytesSalt, iterations));
             Assert.AreEqual(data, decData);
         }
         [Test]
@@ -27,7 +27,7 @@ namespace TSKT.Tests
             var originalBytes = Encoding.UTF8.GetBytes(data);
             var bytesSalt = Encoding.UTF8.GetBytes(salt);
             var encData = TSKT.CryptUtil.Encrypt(CompressUtil.CompressByBrotli(new ReadOnlySequence<byte>(originalBytes)).ToArray(), password, bytesSalt, iterations);
-            var decData = CompressUtil.DecompressByBrotli(new ReadOnlySequence<byte>(TSKT.CryptUtil.Decrypt(encData, password, bytesSalt, iterations)));
+            var decData = CompressUtil.DecompressByBrotli(new ReadOnlySequence<byte>(TSKT.CryptUtil.Decrypt(encData.Span, password, bytesSalt, iterations)));
             Assert.AreEqual(data, Encoding.UTF8.GetString(decData.Span));
         }
     }

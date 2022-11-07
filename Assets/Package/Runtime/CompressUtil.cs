@@ -69,13 +69,13 @@ namespace TSKT
             }
         }
 
-        public static byte[] Compress(ReadOnlyMemory<byte> bytes)
+        public static byte[] Compress(ReadOnlySpan<byte> bytes)
         {
             using (var compressed = new MemoryStream())
             {
                 using (var stream = new DeflateStream(compressed, CompressionMode.Compress))
                 {
-                    stream.Write(bytes.Span);
+                    stream.Write(bytes);
                 }
                 return compressed.ToArray();
             }

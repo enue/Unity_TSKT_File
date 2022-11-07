@@ -37,7 +37,7 @@ namespace TSKT
             return result;
         }
 
-        public static ReadOnlyMemory<byte> Encrypt(ReadOnlyMemory<byte> bytes, string password, byte[] salt, int iterations)
+        public static ReadOnlyMemory<byte> Encrypt(ReadOnlySpan<byte> bytes, string password, byte[] salt, int iterations)
         {
             using (var aes = CreateAes(password, salt, iterations))
             {
@@ -53,7 +53,7 @@ namespace TSKT
             }
         }
 
-        public static byte[] Decrypt(ReadOnlyMemory<byte> encryptedBytes, string key, byte[] salt, int iterations)
+        public static byte[] Decrypt(ReadOnlySpan<byte> encryptedBytes, string key, byte[] salt, int iterations)
         {
             using (var aes = CreateAes(key, salt, iterations))
             {
@@ -67,7 +67,7 @@ namespace TSKT
         }
 
         [System.Obsolete]
-        public static byte[] DecryptByCommonIV(ReadOnlyMemory<byte> encryptedBytes, string key, byte[] salt, int iterations)
+        public static byte[] DecryptByCommonIV(ReadOnlySpan<byte> encryptedBytes, string key, byte[] salt, int iterations)
         {
             using (var aes = CreateAes(key, salt, iterations))
             {

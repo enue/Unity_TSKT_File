@@ -49,25 +49,25 @@ namespace TSKT.Files
 
             if (compress)
             {
-                bytes = CompressUtil.CompressByBrotli(new ReadOnlySequence<byte>(bytes));
+                var body = CompressUtil.CompressByBrotli(new ReadOnlySequence<byte>(bytes)).Span;
 
                 using (var sha = new System.Security.Cryptography.SHA256Managed())
                 {
                     var hashSize = 256 / 8;
-                    var writer = new ArrayBufferWriter<byte>(bytes.Length + hashSize);
-                    if (!sha.TryComputeHash(bytes.Span, writer.GetSpan(hashSize), out var written))
+                    var writer = new ArrayBufferWriter<byte>(body.Length + hashSize);
+                    if (!sha.TryComputeHash(body, writer.GetSpan(hashSize), out var written))
                     {
                         throw new Exception();
                     }
                     writer.Advance(written);
-                    writer.Write(bytes.Span);
+                    writer.Write(body);
                     bytes = writer.WrittenMemory;
                 }
             }
 
             if (ShouldCrypt)
             {
-                bytes = CryptUtil.Encrypt(bytes, password!, salt!, iterations);
+                bytes = CryptUtil.Encrypt(bytes.Span, password!, salt!, iterations);
             }
             return bytes;
         }
@@ -88,7 +88,7 @@ namespace TSKT.Files
                 var buffer = bytes;
                 if (ShouldCrypt)
                 {
-                    buffer = CryptUtil.Decrypt(buffer, password!, salt!, iterations);
+                    buffer = CryptUtil.Decrypt(buffer.Span, password!, salt!, iterations);
                 }
 
                 if (compress)
@@ -122,7 +122,7 @@ namespace TSKT.Files
                 var buffer = bytes;
                 if (ShouldCrypt)
                 {
-                    buffer = CryptUtil.DecryptByCommonIV(buffer, password!, salt!, iterations);
+                    buffer = CryptUtil.DecryptByCommonIV(buffer.Span, password!, salt!, iterations);
                 }
                 if (compress)
                 {
