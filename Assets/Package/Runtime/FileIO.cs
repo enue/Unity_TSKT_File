@@ -11,7 +11,7 @@ namespace TSKT
 {
     public class FileIO
     {
-        readonly Dictionary<string, ReadOnlyMemory<byte>> cache = new();
+        readonly Dictionary<string, LoadResult<byte[]>> cache = new();
         public Files.ILoadSaveResolver Resolver { get; }
         public Files.ISerializeResolver SerialzieResolver { get; }
 
@@ -24,8 +24,9 @@ namespace TSKT
         public ReadOnlySpan<byte> Save<T>(string filename, T obj)
         {
             var bytes = SerialzieResolver.Serialize(obj);
-            Resolver.SaveBytes(filename, bytes.ToArray());
-            cache[filename] = bytes.ToArray();
+            var array = bytes.ToArray();
+            Resolver.SaveBytes(filename, array);
+            cache[filename] = new LoadResult<byte[]>(array);
             return bytes;
         }
 
@@ -37,12 +38,13 @@ namespace TSKT
             try
             {
                 var bytes = await SerialzieResolver.SerializeAsync(obj);
-                cache[filename] = bytes;
+                var array = bytes.ToArray();
                 progress?.Report(0.5f);
                 using (new PreventFromQuitting(null))
                 {
-                    await Resolver.SaveBytesAsync(filename, bytes.ToArray());
+                    await Resolver.SaveBytesAsync(filename, array);
                 }
+                cache[filename] = new LoadResult<byte[]>(array);
                 return bytes;
             }
             finally
@@ -63,9 +65,12 @@ namespace TSKT
             }
             foreach (var it in filenames)
             {
-                if (cache.ContainsKey(it))
+                if (cache.TryGetValue(it, out var result))
                 {
-                    return true;
+                    if (result.Succeeded)
+                    {
+                        return true;
+                    }
                 }
             }
             return Resolver.AnyExist(filenames);
@@ -79,25 +84,30 @@ namespace TSKT
                 {
                     try
                     {
-                        var result = await Resolver.LoadBytesAsync(filename);
-                        if (!result.Succeeded)
-                        {
-                            return result.CreateFailed<T>();
-                        }
-                        bytes = result.value;
+                        bytes = await Resolver.LoadBytesAsync(filename);
                     }
                     catch (System.Exception ex)
                     {
                         Debug.LogException(ex);
                         return LoadResult<T>.CreateError(ex);
                     }
+
+                    // LoadResult.State.Errorの場合はキャッシュしない。IOエラーなら再試行して成功するかもしれないからだ。
+                    if (bytes.state is LoadResult.State.Succeeded or LoadResult.State.NotFound)
+                    {
+                        cache[filename] = bytes;
+                    }
+                }
+                if (!bytes.Succeeded)
+                {
+                    return bytes.CreateFailed<T>();
                 }
 
                 progress?.Report(0.5f);
 
                 try
                 {
-                    var t = await SerialzieResolver.DeserializeAsync<T>(bytes);
+                    var t = await SerialzieResolver.DeserializeAsync<T>(bytes.value);
                     return new LoadResult<T>(t);
                 }
                 catch (System.Exception ex)
@@ -119,23 +129,28 @@ namespace TSKT
             {
                 try
                 {
-                    var result = Resolver.LoadBytes(filename);
-                    if (!result.Succeeded)
-                    {
-                        return result.CreateFailed<T>();
-                    }
-                    bytes = result.value;
+                    bytes = Resolver.LoadBytes(filename);
                 }
                 catch (System.Exception ex)
                 {
                     Debug.LogException(ex);
                     return LoadResult<T>.CreateError(ex);
                 }
+
+                // LoadResult.State.Errorの場合はキャッシュしない。IOエラーなら再試行して成功するかもしれないからだ。
+                if (bytes.state is LoadResult.State.Succeeded or LoadResult.State.NotFound)
+                {
+                    cache[filename] = bytes;
+                }
+            }
+            if (!bytes.Succeeded)
+            {
+                return bytes.CreateFailed<T>();
             }
 
             try
             {
-                var t = SerialzieResolver.Deserialize<T>(bytes.Span);
+                var t = SerialzieResolver.Deserialize<T>(bytes.value);
                 return new LoadResult<T>(t);
             }
             catch (System.Exception ex)
