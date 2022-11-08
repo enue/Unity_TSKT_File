@@ -24,8 +24,7 @@ namespace TSKT.Files
             AppDataLocalLow,
         }
 
-        static int savingProcessCount = 0;
-        static int loadingProcessCount = 0;
+        static int processCount = 0;
 
         public readonly string directory;
 
@@ -73,8 +72,8 @@ namespace TSKT.Files
 
         public async UniTask SaveBytesAsync(string filename, byte[] data)
         {
-            await UniTask.WaitWhile(() => savingProcessCount + loadingProcessCount > 0);
-            ++savingProcessCount;
+            await UniTask.WaitWhile(() => processCount > 0);
+            ++processCount;
             try
             {
                 Directory.CreateDirectory(directory);
@@ -84,7 +83,7 @@ namespace TSKT.Files
             }
             finally
             {
-                --savingProcessCount;
+                --processCount;
             }
         }
 
@@ -97,8 +96,8 @@ namespace TSKT.Files
 
         public async UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
         {
-            await UniTask.WaitWhile(() => savingProcessCount > 0);
-            ++loadingProcessCount;
+            await UniTask.WaitWhile(() => processCount > 0);
+            ++processCount;
             try
             {
                 var fullPath = GetPath(filename);
@@ -119,7 +118,7 @@ namespace TSKT.Files
             }
             finally
             {
-                --loadingProcessCount;
+                --processCount;
             }
         }
 
