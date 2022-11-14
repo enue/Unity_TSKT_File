@@ -256,3 +256,14 @@ The following packages were updated:
   com.unity.collab-proxy from version 1.15.18 to 1.17.2
   com.unity.ide.rider from version 3.0.13 to 3.0.15
   com.unity.test-framework from version 1.1.31 to 1.1.33
+
+=== Mon Nov 14 08:57:29 2022
+
+Packages were changed.
+Update Mode: updateDependencies
+
+The following packages were updated:
+  com.unity.addressables from version 1.19.19 to 1.20.0
+  com.unity.collab-proxy from version 1.15.18 to 1.17.2
+  com.unity.ide.rider from version 3.0.13 to 3.0.16
+  com.unity.timeline from version 1.7.1 to 1.7.2
