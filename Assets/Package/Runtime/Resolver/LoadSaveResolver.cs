@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using System;
 
 namespace TSKT.Files
 {
@@ -12,7 +13,7 @@ namespace TSKT.Files
         UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename);
         UniTask SaveBytesAsync(string filename, byte[] data);
         LoadResult<byte[]> LoadBytes(string filename);
-        void SaveBytes(string filename, byte[] data);
+        void SaveBytes(string filename, ReadOnlySpan<byte> data);
     }
 
     public class FileResolver : ILoadSaveResolver
@@ -87,11 +88,12 @@ namespace TSKT.Files
             }
         }
 
-        public void SaveBytes(string filename, byte[] data)
+        public void SaveBytes(string filename, ReadOnlySpan<byte> data)
         {
             Directory.CreateDirectory(directory);
             var fullPath = GetPath(filename);
-            System.IO.File.WriteAllBytes(fullPath, data);
+            using var file = File.OpenWrite(fullPath);
+            file.Write(data);
         }
 
         public async UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
@@ -164,7 +166,7 @@ namespace TSKT.Files
             SaveBytes(filename, data);
             return UniTask.CompletedTask;
         }
-        public void SaveBytes(string filename, byte[] data)
+        public void SaveBytes(string filename, ReadOnlySpan<byte> data)
         {
             PlayerPrefs.SetString(filename, System.Convert.ToBase64String(data));
         }

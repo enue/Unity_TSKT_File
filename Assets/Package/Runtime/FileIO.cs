@@ -24,27 +24,25 @@ namespace TSKT
         public ReadOnlySpan<byte> Save<T>(string filename, T obj)
         {
             var bytes = SerialzieResolver.Serialize(obj);
-            var array = bytes.ToArray();
-            Resolver.SaveBytes(filename, array);
-            cache[filename] = new LoadResult<byte[]>(array);
+            Resolver.SaveBytes(filename, bytes);
+            cache[filename] = new(bytes.ToArray());
             return bytes;
         }
 
         /// <summary>
         /// シリアライズからファイルアクセスまですべて非同期で行う。途中でタスクキルされるとファイルが壊れることがあるので注意。対応済みの場合のみ採用すること
         /// </summary>
-        public async UniTask<ReadOnlyMemory<byte>> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
+        public async UniTask<byte[]> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
         {
             try
             {
                 var bytes = await SerialzieResolver.SerializeAsync(obj);
-                var array = bytes.ToArray();
                 progress?.Report(0.5f);
                 using (new PreventFromQuitting(null))
                 {
-                    await Resolver.SaveBytesAsync(filename, array);
+                    await Resolver.SaveBytesAsync(filename, bytes);
                 }
-                cache[filename] = new LoadResult<byte[]>(array);
+                cache[filename] = new(bytes);
                 return bytes;
             }
             finally

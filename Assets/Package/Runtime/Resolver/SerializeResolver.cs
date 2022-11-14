@@ -12,9 +12,9 @@ namespace TSKT.Files
     public interface ISerializeResolver
     {
         ReadOnlySpan<byte> Serialize<T>(T obj);
-        UniTask<ReadOnlyMemory<byte>> SerializeAsync<T>(T obj);
+        UniTask<byte[]> SerializeAsync<T>(T obj);
         T Deserialize<T>(ReadOnlySpan<byte> bytes);
-        UniTask<T> DeserializeAsync<T>(ReadOnlyMemory<byte> bytes);
+        UniTask<T> DeserializeAsync<T>(byte[] bytes);
     }
 
     public class JsonResolver : ISerializeResolver
@@ -50,7 +50,7 @@ namespace TSKT.Files
             if (compress)
             {
                 var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-                var body = CompressUtil.CompressByBrotli(new ReadOnlySequence<byte>(bytes));
+                var body = CompressUtil.CompressByBrotli(bytes);
 
                 using (var sha = new System.Security.Cryptography.SHA256Managed())
                 {
@@ -77,12 +77,12 @@ namespace TSKT.Files
             return buffer;
         }
 
-        public UniTask<ReadOnlyMemory<byte>> SerializeAsync<T>(T obj)
+        public UniTask<byte[]> SerializeAsync<T>(T obj)
         {
 #if UNITY_WEBGL
             return UniTask.FromResult(Serialize(obj));
 #else
-            return UniTask.RunOnThreadPool(() => new ReadOnlyMemory<byte>(Serialize(obj).ToArray()));
+            return UniTask.RunOnThreadPool(() => Serialize(obj).ToArray());
 #endif
         }
 
@@ -138,12 +138,12 @@ namespace TSKT.Files
             }
         }
 
-        public UniTask<T> DeserializeAsync<T>(ReadOnlyMemory<byte> bytes)
+        public UniTask<T> DeserializeAsync<T>(byte[] bytes)
         {
 #if UNITY_WEBGL
             return UniTask.FromResult(Deserialize<T>(bytes));
 #else
-            return UniTask.RunOnThreadPool(() => Deserialize<T>(bytes.Span));
+            return UniTask.RunOnThreadPool(() => Deserialize<T>(bytes));
 #endif
         }
 
