@@ -116,7 +116,7 @@ namespace TSKT.Files
                         }
                     }
 
-                    buffer = CompressUtil.DecompressByBrotli(new ReadOnlySequence<byte>(buffer.ToArray()));
+                    buffer = CompressUtil.DecompressByBrotli(buffer);
                 }
 
                 var json = System.Text.Encoding.UTF8.GetString(buffer);

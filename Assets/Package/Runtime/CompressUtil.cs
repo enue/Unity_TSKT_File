@@ -46,6 +46,27 @@ namespace TSKT
             }
         }
 
+        public static ReadOnlySpan<byte> DecompressByBrotli(ReadOnlySpan<byte> source)
+        {
+            var writer = new ArrayBufferWriter<byte>();
+            DecompressByBrotli(source, writer);
+            return writer.WrittenSpan;
+        }
+        public static void DecompressByBrotli(ReadOnlySpan<byte> source, IBufferWriter<byte> writer)
+        {
+            using var decoder = new BrotliDecoder();
+
+            for (; ; )
+            {
+                var status = decoder.Decompress(source, writer.GetSpan(), out var consumed, out var written);
+                if (status == OperationStatus.InvalidData) throw new Exception("invalid data");
+
+                source = source[consumed..];
+                writer.Advance(written);
+                if (written == 0) break;
+            }
+        }
+
         public static ReadOnlySpan<byte> DecompressByBrotli(ReadOnlySequence<byte> sequence)
         {
             var writer = new ArrayBufferWriter<byte>();
