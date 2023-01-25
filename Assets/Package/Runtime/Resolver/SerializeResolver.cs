@@ -80,7 +80,7 @@ namespace TSKT.Files
         public UniTask<byte[]> SerializeAsync<T>(T obj)
         {
 #if UNITY_WEBGL
-            return UniTask.FromResult(Serialize(obj));
+            return UniTask.FromResult(Serialize(obj).ToArray());
 #else
             return UniTask.RunOnThreadPool(() => Serialize(obj).ToArray());
 #endif
