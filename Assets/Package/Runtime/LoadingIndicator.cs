@@ -30,7 +30,7 @@ namespace TSKT
                 {
                     time = null;
                 }
-            }).AddTo(this);
+            }).AddTo(destroyCancellationToken);
         }
         void Update()
         {
