@@ -4,9 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-#if TSKT_FILE_UNIRX_SUPPORT
 using UniRx;
-#endif
 
 namespace TSKT
 {
@@ -23,7 +21,6 @@ namespace TSKT
 
         float? time;
 
-#if TSKT_FILE_UNIRX_SUPPORT
         void Start()
         {
             LoadingProgress.Instance.OperationCount.Subscribe(_ =>
@@ -55,6 +52,5 @@ namespace TSKT
                 time = null;
             }
         }
-#endif
     }
 }

@@ -25,11 +25,6 @@
             "name": "com.unity.modules.assetbundle",
             "expression": "",
             "define": "TSKT_FILE_ASSETBUNDLE_SUPPORT"
-        },
-        {
-            "name": "com.neuecc.unirx",
-            "expression": "",
-            "define": "TSKT_FILE_UNIRX_SUPPORT"
         }
     ],
     "noEngineReferences": false

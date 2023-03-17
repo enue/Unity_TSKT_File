@@ -127,6 +127,7 @@ namespace TSKT.Files
                 var buffer = bytes;
                 if (ShouldCrypt)
                 {
+                    // CryptUtil.Decryptでコケたときに旧形式で復号を試みる
                     buffer = CryptUtil.DecryptByCommonIV(buffer, password!, salt!, iterations);
                 }
                 if (compress)

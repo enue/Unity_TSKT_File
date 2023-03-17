@@ -3,9 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-#if TSKT_FILE_UNIRX_SUPPORT
 using UniRx;
-#endif
+
 namespace TSKT
 {
     public class LoadingProgress
@@ -50,9 +49,7 @@ namespace TSKT
         readonly List<IItem> operations = new();
         float fixedTotalProgress = 0f;
         float fixedProgress = 0f;
-#if TSKT_FILE_UNIRX_SUPPORT
         public ReactiveProperty<int> OperationCount { get; } = new(0);
-#endif
         LoadingProgress()
         {
             // nop;
