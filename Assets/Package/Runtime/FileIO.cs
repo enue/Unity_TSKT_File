@@ -13,17 +13,17 @@ namespace TSKT
     {
         readonly Dictionary<string, LoadResult<byte[]>> cache = new();
         public Files.ILoadSaveResolver Resolver { get; }
-        public Files.ISerializeResolver SerialzieResolver { get; }
+        public Files.ISerializeResolver SerializeResolver { get; }
 
         public FileIO(Files.ILoadSaveResolver resolver, Files.ISerializeResolver serializeResolver)
         {
             Resolver = resolver;
-            SerialzieResolver = serializeResolver;
+            SerializeResolver = serializeResolver;
         }
 
         public ReadOnlySpan<byte> Save<T>(string filename, T obj)
         {
-            var bytes = SerialzieResolver.Serialize(obj);
+            var bytes = SerializeResolver.Serialize(obj);
             Resolver.SaveBytes(filename, bytes);
             cache[filename] = new(bytes.ToArray());
             return bytes;
@@ -36,7 +36,7 @@ namespace TSKT
         {
             try
             {
-                var bytes = await SerialzieResolver.SerializeAsync(obj);
+                var bytes = await SerializeResolver.SerializeAsync(obj);
                 progress?.Report(0.5f);
                 using (new PreventFromQuitting(null))
                 {
@@ -105,7 +105,7 @@ namespace TSKT
 
                 try
                 {
-                    var t = await SerialzieResolver.DeserializeAsync<T>(bytes.value);
+                    var t = await SerializeResolver.DeserializeAsync<T>(bytes.value);
                     return new LoadResult<T>(t);
                 }
                 catch (System.Exception ex)
@@ -148,7 +148,7 @@ namespace TSKT
 
             try
             {
-                var t = SerialzieResolver.Deserialize<T>(bytes.value);
+                var t = SerializeResolver.Deserialize<T>(bytes.value);
                 return new LoadResult<T>(t);
             }
             catch (System.Exception ex)
