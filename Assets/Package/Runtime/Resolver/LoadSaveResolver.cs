@@ -92,8 +92,7 @@ namespace TSKT.Files
         {
             Directory.CreateDirectory(directory);
             var fullPath = GetPath(filename);
-            using var file = File.OpenWrite(fullPath);
-            file.Write(data);
+            File.WriteAllBytes(fullPath, data.ToArray());
         }
 
         public async UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
