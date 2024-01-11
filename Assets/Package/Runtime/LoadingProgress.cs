@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using UniRx;
+using R3;
 
 namespace TSKT
 {
@@ -78,9 +78,7 @@ namespace TSKT
             fixedTotalProgress = totalProgress;
 
             operations.Add(item);
-#if TSKT_FILE_UNIRX_SUPPORT
             OperationCount.Value = operations.Count;
-#endif
         }
 
         float GetProgress(out float totalProgress)
@@ -93,9 +91,7 @@ namespace TSKT
             if (operations.TrueForAll(_ => _.IsDone))
             {
                 operations.Clear();
-#if TSKT_FILE_UNIRX_SUPPORT
                 OperationCount.Value = 0;
-#endif
 
                 totalProgress = 0f;
                 return 1f;
