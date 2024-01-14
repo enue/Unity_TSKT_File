@@ -8,7 +8,6 @@
     "category": "",
     "dependencies": {
         "com.cysharp.unitask": "2.5.0",
-        "com.neuecc.unirx": "7.1.0",
         "com.github.enue.tskt_editor": "0.0.1"
     }
 }

@@ -28,13 +28,6 @@
       "dependencies": {},
       "hash": "e6dd443e0f609870bf66ff46fa8a3ec3fb716d1a"
     },
-    "com.neuecc.unirx": {
-      "version": "https://github.com/neuecc/UniRx.git?path=Assets/Plugins/UniRx/Scripts",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "7cce378b3f8c8943b4cac8e847bdbb8e2e1802d1"
-    },
     "com.unity.addressables": {
       "version": "1.21.19",
       "depth": 0,
