@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Cysharp.Threading.Tasks;
 using System;
 using System.Linq;
 using System.Buffers;
@@ -12,9 +11,9 @@ namespace TSKT.Files
     public interface ISerializeResolver
     {
         ReadOnlySpan<byte> Serialize<T>(T obj);
-        UniTask<byte[]> SerializeAsync<T>(T obj);
+        Awaitable<byte[]> SerializeAsync<T>(T obj);
         T Deserialize<T>(ReadOnlySpan<byte> bytes);
-        UniTask<T> DeserializeAsync<T>(byte[] bytes);
+        Awaitable<T> DeserializeAsync<T>(byte[] bytes);
     }
 
     public class JsonResolver : ISerializeResolver
@@ -77,12 +76,15 @@ namespace TSKT.Files
             return buffer;
         }
 
-        public UniTask<byte[]> SerializeAsync<T>(T obj)
+        public async Awaitable<byte[]> SerializeAsync<T>(T obj)
         {
 #if UNITY_WEBGL
-            return UniTask.FromResult(Serialize(obj).ToArray());
+            return Serialize(obj).ToArray();
 #else
-            return UniTask.RunOnThreadPool(() => Serialize(obj).ToArray());
+            await Awaitable.BackgroundThreadAsync();
+            var result = Serialize(obj).ToArray();
+            await Awaitable.MainThreadAsync();
+            return result;
 #endif
         }
 
@@ -139,12 +141,15 @@ namespace TSKT.Files
             }
         }
 
-        public UniTask<T> DeserializeAsync<T>(byte[] bytes)
+        public async Awaitable<T> DeserializeAsync<T>(byte[] bytes)
         {
 #if UNITY_WEBGL
-            return UniTask.FromResult(Deserialize<T>(bytes));
+            return Deserialize<T>(bytes);
 #else
-            return UniTask.RunOnThreadPool(() => Deserialize<T>(bytes));
+            await Awaitable.BackgroundThreadAsync();
+            var result = Deserialize<T>(bytes);
+            await Awaitable.MainThreadAsync();
+            return result;
 #endif
         }
 

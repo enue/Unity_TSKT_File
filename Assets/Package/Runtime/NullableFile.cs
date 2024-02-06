@@ -42,7 +42,7 @@ namespace TSKT
             }
         }
 
-        public async UniTask<T?> LoadAsync(System.IProgress<float>? progress = null)
+        public async Awaitable<T?> LoadAsync(System.IProgress<float>? progress = null)
         {
             if (value != null)
             {
@@ -68,7 +68,7 @@ namespace TSKT
                 io.Save(filename, value);
             }
         }
-        public async UniTask SaveAsync(System.IProgress<float>? progress = null)
+        public async Awaitable SaveAsync(System.IProgress<float>? progress = null)
         {
             if (value == null)
             {

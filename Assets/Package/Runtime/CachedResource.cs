@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using Cysharp.Threading.Tasks;
 
 namespace TSKT
 {
@@ -28,7 +27,7 @@ namespace TSKT
             return result;
         }
 
-        public async static UniTask<T?> LoadAsync(string path)
+        public async static Awaitable<T?> LoadAsync(string path)
         {
             if (cache.TryGetValue(path, out var result))
             {

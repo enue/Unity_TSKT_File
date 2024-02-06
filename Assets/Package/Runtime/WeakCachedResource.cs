@@ -20,7 +20,7 @@ namespace TSKT
             return Resources.Load<T>(path);
         }
 
-        public async static UniTask<T?> LoadAsync(string path)
+        public async static Awaitable<T?> LoadAsync(string path)
         {
             return await ResourcesUtil.LoadAsync<T>(path);
         }

@@ -11,9 +11,6 @@ namespace TSKT
     public class LoadingIndicator : MonoBehaviour
     {
         [SerializeField]
-        GameObject window = default!;
-
-        [SerializeField]
         Image value = default!;
 
         [SerializeField]

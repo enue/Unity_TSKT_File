@@ -32,7 +32,7 @@ namespace TSKT
         /// <summary>
         /// シリアライズからファイルアクセスまですべて非同期で行う。途中でタスクキルされるとファイルが壊れることがあるので注意。対応済みの場合のみ採用すること
         /// </summary>
-        public async UniTask<byte[]> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
+        public async Awaitable<byte[]> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
         {
             try
             {
@@ -74,7 +74,7 @@ namespace TSKT
             return Resolver.AnyExist(filenames);
         }
 
-        public async UniTask<LoadResult<T>> LoadAsync<T>(string filename, System.IProgress<float>? progress = null)
+        public async Awaitable<LoadResult<T>> LoadAsync<T>(string filename, System.IProgress<float>? progress = null)
         {
             try
             {

@@ -1,7 +1,6 @@
 ﻿#nullable enable
 using System.IO;
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 using System;
 
@@ -10,8 +9,8 @@ namespace TSKT.Files
     public interface ILoadSaveResolver
     {
         bool AnyExist(params string[] filenames);
-        UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename);
-        UniTask SaveBytesAsync(string filename, byte[] data);
+        Awaitable<LoadResult<byte[]>> LoadBytesAsync(string filename);
+        Awaitable SaveBytesAsync(string filename, byte[] data);
         LoadResult<byte[]> LoadBytes(string filename);
         void SaveBytes(string filename, ReadOnlySpan<byte> data);
     }
@@ -71,9 +70,12 @@ namespace TSKT.Files
             return false;
         }
 
-        public async UniTask SaveBytesAsync(string filename, byte[] data)
+        public async Awaitable SaveBytesAsync(string filename, byte[] data)
         {
-            await UniTask.WaitWhile(() => processCount > 0);
+            while (processCount > 0)
+            {
+                await Awaitable.NextFrameAsync();
+            }
             ++processCount;
             try
             {
@@ -95,9 +97,12 @@ namespace TSKT.Files
             File.WriteAllBytes(fullPath, data.ToArray());
         }
 
-        public async UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
+        public async Awaitable<LoadResult<byte[]>> LoadBytesAsync(string filename)
         {
-            await UniTask.WaitWhile(() => processCount > 0);
+            while (processCount > 0)
+            {
+                await Awaitable.NextFrameAsync();
+            }
             ++processCount;
             try
             {
@@ -160,20 +165,18 @@ namespace TSKT.Files
             return false;
         }
 
-        public UniTask SaveBytesAsync(string filename, byte[] data)
+        public async Awaitable SaveBytesAsync(string filename, byte[] data)
         {
             SaveBytes(filename, data);
-            return UniTask.CompletedTask;
         }
         public void SaveBytes(string filename, ReadOnlySpan<byte> data)
         {
             PlayerPrefs.SetString(filename, System.Convert.ToBase64String(data));
         }
 
-        public UniTask<LoadResult<byte[]>> LoadBytesAsync(string filename)
+        public async Awaitable<LoadResult<byte[]>> LoadBytesAsync(string filename)
         {
-            var result = LoadBytes(filename);
-            return UniTask.FromResult(result);
+            return LoadBytes(filename);
         }
 
         public LoadResult<byte[]> LoadBytes(string filename)
