@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using Cysharp.Threading.Tasks;
 
 namespace TSKT
 {
@@ -20,7 +19,7 @@ namespace TSKT
             return Resources.Load<T>(path);
         }
 
-        public async static Awaitable<T?> LoadAsync(string path)
+        public async static Awaitable<T> LoadAsync(string path)
         {
             return await ResourcesUtil.LoadAsync<T>(path);
         }
