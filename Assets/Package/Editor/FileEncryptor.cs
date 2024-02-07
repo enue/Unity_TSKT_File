@@ -1,8 +1,10 @@
-﻿using System.IO;
+﻿#nullable enable
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
+#if TSKT_EDITOR_SUPPORT
 namespace TSKT
 {
     public class FileEncryptor : EditorWindow
@@ -12,7 +14,7 @@ namespace TSKT
         int iterations = 1000;
         bool compress = false;
 
-        [MenuItem("TSKT/File Ecryptor")]
+        [MenuItem("TSKT/File Encryptor")]
         static void Init()
         {
             var window = (FileEncryptor)GetWindow(typeof(FileEncryptor));
@@ -75,3 +77,4 @@ namespace TSKT
         }
     }
 }
+#endif

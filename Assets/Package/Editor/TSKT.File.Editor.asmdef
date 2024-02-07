@@ -2,8 +2,8 @@
     "name": "TSKT.File.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:1061cc3a9b7674142a52f0809132512f",
-        "GUID:2245217fb1e4289429e8a92b7b18d438"
+        "GUID:2245217fb1e4289429e8a92b7b18d438",
+        "GUID:1061cc3a9b7674142a52f0809132512f"
     ],
     "includePlatforms": [
         "Editor"
@@ -14,6 +14,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.github.enue.tskt_editor",
+            "expression": "",
+            "define": "TSKT_EDITOR_SUPPORT"
+        }
+    ],
     "noEngineReferences": false
 }
