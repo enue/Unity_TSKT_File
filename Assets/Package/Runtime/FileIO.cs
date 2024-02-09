@@ -23,9 +23,14 @@ namespace TSKT
         public ReadOnlySpan<byte> Save<T>(string filename, T obj)
         {
             var bytes = SerializeResolver.Serialize(obj);
+            SaveBytes(filename, bytes);
+            return bytes;
+        }
+
+        public void SaveBytes(string filename, ReadOnlySpan<byte> bytes)
+        {
             Resolver.SaveBytes(filename, bytes);
             cache[filename] = new(bytes.ToArray());
-            return bytes;
         }
 
         /// <summary>
@@ -37,12 +42,25 @@ namespace TSKT
             {
                 var bytes = await SerializeResolver.SerializeAsync(obj);
                 progress?.Report(0.5f);
+
+                await SaveBytesAsync(filename, bytes, progress);
+                return bytes;
+            }
+            finally
+            {
+                progress?.Report(1f);
+            }
+        }
+
+        public async Awaitable SaveBytesAsync(string filename, byte[] bytes, System.IProgress<float>? progress = null)
+        {
+            try
+            {
                 using (new PreventFromQuitting(null))
                 {
                     await Resolver.SaveBytesAsync(filename, bytes);
                 }
                 cache[filename] = new(bytes);
-                return bytes;
             }
             finally
             {
