@@ -29,6 +29,16 @@ namespace TSKT
 
         public void SaveBytes(string filename, ReadOnlySpan<byte> bytes)
         {
+            if (cache.TryGetValue(filename, out var previous))
+            {
+                if (previous.Succeeded)
+                {
+                    if (bytes.SequenceEqual(previous.value))
+                    {
+                        return;
+                    }
+                }
+            }
             Resolver.SaveBytes(filename, bytes);
             cache[filename] = new(bytes.ToArray());
         }
@@ -56,6 +66,16 @@ namespace TSKT
         {
             try
             {
+                if (cache.TryGetValue(filename, out var previous))
+                {
+                    if (previous.Succeeded)
+                    {
+                        if (previous.value.SequenceEqual(bytes))
+                        {
+                            return;
+                        }
+                    }
+                }
                 using (new PreventFromQuitting(null))
                 {
                     await Resolver.SaveBytesAsync(filename, bytes);
