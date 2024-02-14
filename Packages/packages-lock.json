@@ -4,8 +4,10 @@
       "version": "https://github.com/Cysharp/R3.git?path=src/R3.Unity/Assets/R3.Unity",
       "depth": 0,
       "source": "git",
-      "dependencies": {},
-      "hash": "fd26e664b12c1227c9ac7e566af2355e6d36ed00"
+      "dependencies": {
+        "com.unity.modules.imgui": "1.0.0"
+      },
+      "hash": "ab2021588bb9bcd98996bba586a7a33e1a0da06c"
     },
     "com.github-glitchenzo.nugetforunity": {
       "version": "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity",

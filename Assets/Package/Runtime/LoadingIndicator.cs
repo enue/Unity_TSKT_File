@@ -26,7 +26,7 @@ namespace TSKT
                 {
                     time = null;
                 }
-            }).AddTo(this);
+            }).RegisterTo(destroyCancellationToken);
         }
         void Update()
         {
