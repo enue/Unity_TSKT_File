@@ -14,6 +14,8 @@ namespace TSKT
         public Files.ILoadSaveResolver Resolver { get; }
         public Files.ISerializeResolver SerializeResolver { get; }
 
+        AwaitableCompletionSource? writingCompletion;
+
         public FileIO(Files.ILoadSaveResolver resolver, Files.ISerializeResolver serializeResolver)
         {
             Resolver = resolver;
@@ -48,44 +50,79 @@ namespace TSKT
         /// </summary>
         public async Awaitable<byte[]> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
         {
+            var myCompletion = new AwaitableCompletionSource();
+            var previousCompletion = writingCompletion;
+            writingCompletion = myCompletion;
+
             try
             {
                 var bytes = await SerializeResolver.SerializeAsync(obj);
                 progress?.Report(0.5f);
 
-                await SaveBytesAsync(filename, bytes, progress);
+                if (previousCompletion != null)
+                {
+                    await previousCompletion.Awaitable;
+                }
+
+                await SaveBytesAsyncInternal(filename, bytes);
                 return bytes;
             }
             finally
             {
                 progress?.Report(1f);
+
+                myCompletion.TrySetResult();
+                if (writingCompletion == myCompletion)
+                {
+                    writingCompletion = null;
+                }
             }
         }
 
         public async Awaitable SaveBytesAsync(string filename, byte[] bytes, System.IProgress<float>? progress = null)
         {
+            var myCompletion = new AwaitableCompletionSource();
+            var previousCompletion = writingCompletion;
+            writingCompletion = myCompletion;
+
             try
             {
-                if (cache.TryGetValue(filename, out var previous))
+                if (previousCompletion != null)
                 {
-                    if (previous.Succeeded)
-                    {
-                        if (previous.value.SequenceEqual(bytes))
-                        {
-                            return;
-                        }
-                    }
+                    await previousCompletion.Awaitable;
                 }
-                using (new PreventFromQuitting(null))
-                {
-                    await Resolver.SaveBytesAsync(filename, bytes);
-                }
-                cache[filename] = new(bytes);
+
+                await SaveBytesAsyncInternal(filename, bytes);
             }
             finally
             {
                 progress?.Report(1f);
+
+                myCompletion.TrySetResult();
+                if (writingCompletion == myCompletion)
+                {
+                    writingCompletion = null;
+                }
             }
+        }
+
+        async Awaitable SaveBytesAsyncInternal(string filename, byte[] bytes)
+        {
+            if (cache.TryGetValue(filename, out var previous))
+            {
+                if (previous.Succeeded)
+                {
+                    if (previous.value.SequenceEqual(bytes))
+                    {
+                        return;
+                    }
+                }
+            }
+            using (new PreventFromQuitting(null))
+            {
+                await Resolver.SaveBytesAsync(filename, bytes);
+            }
+            cache[filename] = new(bytes);
         }
 
         public bool AnyExist(params string[] filenames)
