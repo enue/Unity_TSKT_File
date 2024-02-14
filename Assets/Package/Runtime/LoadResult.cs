@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#nullable enable
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,9 +20,9 @@ namespace TSKT
     {
         public readonly LoadResult.State state;
         public readonly T value;
-        public readonly System.Exception exception;
+        public readonly System.Exception? exception;
 
-        public LoadResult(T value, LoadResult.State state, System.Exception exception)
+        public LoadResult(T value, LoadResult.State state, System.Exception? exception)
         {
             this.state = state;
             this.value = value;
@@ -43,15 +44,15 @@ namespace TSKT
 
         readonly public bool Succeeded => state == LoadResult.State.Succeeded;
 
-        public static LoadResult<T> CreateNotFound(System.Exception ex = null)
+        public static LoadResult<T> CreateNotFound(System.Exception? ex = null)
         {
             return new LoadResult<T>(default, LoadResult.State.NotFound, ex);
         }
-        public static LoadResult<T> CreateFailedDeserialize(System.Exception ex = null)
+        public static LoadResult<T> CreateFailedDeserialize(System.Exception? ex = null)
         {
             return new LoadResult<T>(default, LoadResult.State.FailedDeserialize, ex);
         }
-        public static LoadResult<T> CreateError(System.Exception ex = null)
+        public static LoadResult<T> CreateError(System.Exception? ex = null)
         {
             return new LoadResult<T>(default, LoadResult.State.Error, ex);
         }
