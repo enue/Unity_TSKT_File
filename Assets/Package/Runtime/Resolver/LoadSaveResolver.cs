@@ -24,8 +24,6 @@ namespace TSKT.Files
             AppDataLocalLow,
         }
 
-        static int processCount = 0;
-
         public readonly string directory;
 
         public FileResolver(UserFolder type)
@@ -72,22 +70,10 @@ namespace TSKT.Files
 
         public async Awaitable SaveBytesAsync(string filename, byte[] data)
         {
-            while (processCount > 0)
-            {
-                await Awaitable.NextFrameAsync();
-            }
-            ++processCount;
-            try
-            {
-                Directory.CreateDirectory(directory);
+            Directory.CreateDirectory(directory);
 
-                var fullPath = GetPath(filename);
-                await System.IO.File.WriteAllBytesAsync(fullPath, data);
-            }
-            finally
-            {
-                --processCount;
-            }
+            var fullPath = GetPath(filename);
+            await System.IO.File.WriteAllBytesAsync(fullPath, data);
         }
 
         public void SaveBytes(string filename, ReadOnlySpan<byte> data)
@@ -99,11 +85,6 @@ namespace TSKT.Files
 
         public async Awaitable<LoadResult<byte[]>> LoadBytesAsync(string filename)
         {
-            while (processCount > 0)
-            {
-                await Awaitable.NextFrameAsync();
-            }
-            ++processCount;
             try
             {
                 var fullPath = GetPath(filename);
@@ -121,10 +102,6 @@ namespace TSKT.Files
             catch (IOException ex)
             {
                 return LoadResult<byte[]>.CreateError(ex);
-            }
-            finally
-            {
-                --processCount;
             }
         }
 
