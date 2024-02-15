@@ -1,12 +1,12 @@
 {
     "name": "com.github.enue.tskt_file",
     "displayName": "TSKT File",
-    "version": "0.19.17",
+    "version": "0.19.18",
     "unity": "2023.2",
     "description": "",
     "keywords": [],
     "category": "",
     "dependencies": {
-        "com.cysharp.r3": "0.1.4"
+        "com.cysharp.r3": "0.1.23"
     }
 }
