@@ -30,7 +30,7 @@ namespace TSKT.Files
         {
             directory = type switch
             {
-                UserFolder.AppDataLocalLow => UserFolderUtil.AppDataLoalLowCompanyProduct,
+                UserFolder.AppDataLocalLow => UserFolderUtil.AppDataLocalLowCompanyProduct,
                 UserFolder.MyDocuments => UserFolderUtil.MyDocumentsCompanyProduct,
                 UserFolder.ApplicationDirectory => UserFolderUtil.GetApplicationDirectory(null),
                 _ => throw new System.NotImplementedException(),

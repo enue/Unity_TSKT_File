@@ -12,7 +12,7 @@ namespace TSKT.Tests
         [Test]
         public void Paths()
         {
-            var appData = UserFolderUtil.AppDataLoalLowCompanyProduct;
+            var appData = UserFolderUtil.AppDataLocalLowCompanyProduct;
             var appPath = UserFolderUtil.GetApplicationDirectory("SaveData");
             var myDocument = UserFolderUtil.MyDocumentsCompanyProduct;
         }

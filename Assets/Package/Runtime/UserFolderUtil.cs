@@ -27,7 +27,7 @@ namespace TSKT.Files
                 }
             }
         }
-        public static string AppDataLoalLowCompanyProduct => Application.persistentDataPath;
+        public static string AppDataLocalLowCompanyProduct => Application.persistentDataPath;
         public static string GetApplicationDirectory(string? subFolder)
         {
 #if UNITY_EDITOR || UNITY_STANDALONE
