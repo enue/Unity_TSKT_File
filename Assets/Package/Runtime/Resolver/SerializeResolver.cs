@@ -5,6 +5,7 @@ using UnityEngine;
 using System;
 using System.Linq;
 using System.Buffers;
+using System.Security.Cryptography;
 
 namespace TSKT.Files
 {
@@ -48,8 +49,17 @@ namespace TSKT.Files
 
             if (compress)
             {
-                var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-                var body = CompressUtil.CompressByBrotli(bytes);
+                ReadOnlySpan<byte> body;
+                {
+                    Span<byte> bytes = stackalloc byte[System.Text.Encoding.UTF8.GetMaxByteCount(json.Length)];
+                    var l = System.Text.Encoding.UTF8.GetBytes(json, bytes);
+                    bytes = bytes[..l];
+
+                    var length = System.IO.Compression.BrotliEncoder.GetMaxCompressedLength(bytes.Length);
+                    var _writer = new ArrayBufferWriter<byte>(length);
+                    CompressUtil.CompressByBrotli(bytes, _writer);
+                    body = _writer.WrittenSpan;
+                }
 
                 using var sha = new System.Security.Cryptography.SHA256Managed();
                 var hashSize = 256 / 8;
@@ -69,7 +79,9 @@ namespace TSKT.Files
 
             if (ShouldCrypt)
             {
-                buffer = CryptUtil.Encrypt(buffer, password!, salt!, iterations);
+                var writer = new ArrayBufferWriter<byte>();
+                CryptUtil.Encrypt(buffer, password!, salt!, iterations, writer);
+                buffer = writer.WrittenSpan;
             }
             return buffer;
         }

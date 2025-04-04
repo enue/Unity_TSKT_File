@@ -35,14 +35,19 @@ namespace TSKT
 
         public static ReadOnlySpan<byte> Encrypt(ReadOnlySpan<byte> bytes, string password, byte[] salt, int iterations)
         {
+            var writer = new ArrayBufferWriter<byte>();
+            Encrypt(bytes, password, salt, iterations, writer);
+            return writer.WrittenSpan;
+        }
+
+        public static void Encrypt(ReadOnlySpan<byte> bytes, string password, byte[] salt, int iterations, IBufferWriter<byte> writer)
+        {
             using var aes = CreateAes(password, salt, iterations);
             using var encryptor = aes.CreateEncryptor();
             var iv = aes.IV;
             var body = encryptor.TransformFinalBlock(bytes.ToArray(), 0, bytes.Length);
-            var writer = new ArrayBufferWriter<byte>(iv.Length + body.Length);
             writer.Write(iv);
             writer.Write(body);
-            return writer.WrittenSpan;
         }
 
         public static byte[] Decrypt(ReadOnlySpan<byte> encryptedBytes, string key, byte[] salt, int iterations)
