@@ -9,7 +9,7 @@ namespace TSKT
     public static class CachedResource<T>
         where T : Object
     {
-        readonly static Dictionary<string, T?> cache = new Dictionary<string, T?>();
+        readonly static Dictionary<string, T?> cache = new();
 
         public static T? Load(string path)
         {

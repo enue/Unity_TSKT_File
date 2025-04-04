@@ -51,18 +51,16 @@ namespace TSKT.Files
                 var bytes = System.Text.Encoding.UTF8.GetBytes(json);
                 var body = CompressUtil.CompressByBrotli(bytes);
 
-                using (var sha = new System.Security.Cryptography.SHA256Managed())
+                using var sha = new System.Security.Cryptography.SHA256Managed();
+                var hashSize = 256 / 8;
+                var writer = new ArrayBufferWriter<byte>(body.Length + hashSize);
+                if (!sha.TryComputeHash(body, writer.GetSpan(hashSize), out var written))
                 {
-                    var hashSize = 256 / 8;
-                    var writer = new ArrayBufferWriter<byte>(body.Length + hashSize);
-                    if (!sha.TryComputeHash(body, writer.GetSpan(hashSize), out var written))
-                    {
-                        throw new Exception();
-                    }
-                    writer.Advance(written);
-                    writer.Write(body);
-                    buffer = writer.WrittenSpan;
+                    throw new Exception();
                 }
+                writer.Advance(written);
+                writer.Write(body);
+                buffer = writer.WrittenSpan;
             }
             else
             {

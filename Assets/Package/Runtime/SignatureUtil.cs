@@ -8,12 +8,10 @@ namespace TSKT
     {
         public static (string publicKey, string privateKey) GenerateKeys()
         {
-            using (var rsa = new System.Security.Cryptography.RSACryptoServiceProvider())
-            {
-                var publicKey = rsa.ToXmlString(false);
-                var privateKey = rsa.ToXmlString(true);
-                return (publicKey, privateKey);
-            }
+            using var rsa = new System.Security.Cryptography.RSACryptoServiceProvider();
+            var publicKey = rsa.ToXmlString(false);
+            var privateKey = rsa.ToXmlString(true);
+            return (publicKey, privateKey);
         }
 
         public static byte[] CreateDigitalSignature(string message, string privateKey)
@@ -24,21 +22,17 @@ namespace TSKT
 
         public static byte[] CreateDigitalSignature(byte[] bytes, string privateKey)
         {
-            using (var sha = new System.Security.Cryptography.SHA256Managed())
-            {
-                var hashData = sha.ComputeHash(bytes);
+            using var sha = new System.Security.Cryptography.SHA256Managed();
+            var hashData = sha.ComputeHash(bytes);
 
-                using (var rsa = new System.Security.Cryptography.RSACryptoServiceProvider())
-                {
-                    rsa.FromXmlString(privateKey);
+            using var rsa = new System.Security.Cryptography.RSACryptoServiceProvider();
+            rsa.FromXmlString(privateKey);
 
-                    var rsaFormatter = new System.Security.Cryptography.RSAPKCS1SignatureFormatter(rsa);
-                    rsaFormatter.SetHashAlgorithm("SHA256");
+            var rsaFormatter = new System.Security.Cryptography.RSAPKCS1SignatureFormatter(rsa);
+            rsaFormatter.SetHashAlgorithm("SHA256");
 
-                    var signedValue = rsaFormatter.CreateSignature(hashData);
-                    return signedValue;
-                }
-            }
+            var signedValue = rsaFormatter.CreateSignature(hashData);
+            return signedValue;
         }
 
         public static bool VerifyDigitalSignature(string message, byte[] signature, string publicKey)
@@ -49,20 +43,16 @@ namespace TSKT
 
         public static bool VerifyDigitalSignature(byte[] bytes, byte[] signature, string publicKey)
         {
-            using (var sha = new System.Security.Cryptography.SHA256Managed())
-            {
-                var hashData = sha.ComputeHash(bytes);
+            using var sha = new System.Security.Cryptography.SHA256Managed();
+            var hashData = sha.ComputeHash(bytes);
 
-                using (var rsa = new System.Security.Cryptography.RSACryptoServiceProvider())
-                {
-                    rsa.FromXmlString(publicKey);
+            using var rsa = new System.Security.Cryptography.RSACryptoServiceProvider();
+            rsa.FromXmlString(publicKey);
 
-                    var rsaDeformatter = new System.Security.Cryptography.RSAPKCS1SignatureDeformatter(rsa);
-                    rsaDeformatter.SetHashAlgorithm("SHA256");
+            var rsaDeformatter = new System.Security.Cryptography.RSAPKCS1SignatureDeformatter(rsa);
+            rsaDeformatter.SetHashAlgorithm("SHA256");
 
-                    return rsaDeformatter.VerifySignature(hashData, signature);
-                }
-            }
+            return rsaDeformatter.VerifySignature(hashData, signature);
         }
     }
 }
