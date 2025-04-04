@@ -108,39 +108,46 @@ namespace TSKT.Files
         {
             try
             {
-                var buffer = bytes;
+                ReadOnlySpan<byte> buffer;
                 if (ShouldCrypt)
                 {
-                    buffer = CryptUtil.Decrypt(buffer, password!, salt!, iterations);
+                    buffer = CryptUtil.Decrypt(bytes.ToArray(), password!, salt!, iterations);
+                }
+                else
+                {
+                    buffer = bytes;
                 }
 
+                //using var json = ZString.CreateUtf8StringBuilder();を使いたいがうまくいかないのでArrayBufferWriter
+                var json = new ArrayBufferWriter<byte>();
                 if (compress)
                 {
+                    var hashSize = 256 / 8;
+                    var signature = buffer[..hashSize];
+                    var body = buffer[hashSize..];
+
                     // decompressする前にハッシュチェックを行う。というのもbrotliに雑なデータを食わせるとクラッシュする。
                     using (var sha = new System.Security.Cryptography.SHA256Managed())
                     {
-                        var hashSize = 256 / 8;
-                        var signature = buffer[..hashSize];
-                        buffer = buffer[hashSize..];
-                        var hashData = new ArrayBufferWriter<byte>(hashSize);
-                        if (!sha.TryComputeHash(buffer, hashData.GetSpan(hashSize), out var written))
+                        Span<byte> hashData = stackalloc byte[hashSize];
+                        if (!sha.TryComputeHash(body, hashData, out var written))
                         {
                             throw new Exception();
                         }
-                        hashData.Advance(written);
-                        if (!signature.SequenceEqual(hashData.WrittenSpan))
+                        if (!signature.SequenceEqual(hashData[..written]))
                         {
                             throw new Exception();
                         }
                     }
-
-                    var writer = new ArrayBufferWriter<byte>();
-                    CompressUtil.DecompressByBrotli(buffer, writer);
-                    buffer = writer.WrittenSpan;
+                    CompressUtil.DecompressByBrotli(body, json);
+                }
+                else
+                {
+                    json.Write(buffer);
                 }
 
-                var json = System.Text.Encoding.UTF8.GetString(buffer);
-                return JsonUtility.FromJson<T>(json);
+                var jsonString = System.Text.Encoding.UTF8.GetString(json.WrittenSpan);
+                return JsonUtility.FromJson<T>(jsonString);
             }
             catch (Exception)
             {
