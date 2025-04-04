@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System;
+using System.Buffers;
 
 namespace TSKT
 {
@@ -24,9 +25,11 @@ namespace TSKT
 
         public ReadOnlySpan<byte> Save<T>(string filename, T obj)
         {
-            var bytes = SerializeResolver.Serialize(obj);
-            SaveBytes(filename, bytes);
-            return bytes;
+            var writer = new ArrayBufferWriter<byte>();
+            SerializeResolver.Serialize(obj, writer);
+            var result = writer.WrittenSpan;
+            SaveBytes(filename, result);
+            return result;
         }
 
         public void SaveBytes(string filename, ReadOnlySpan<byte> bytes)
@@ -56,7 +59,8 @@ namespace TSKT
 
             try
             {
-                var bytes = await SerializeResolver.SerializeAsync(obj);
+                var writer = new ArrayBufferWriter<byte>();
+                await SerializeResolver.SerializeAsync(obj, writer);
                 progress?.Report(0.5f);
 
                 if (previousCompletion != null)
@@ -64,6 +68,7 @@ namespace TSKT
                     await previousCompletion.Awaitable;
                 }
 
+                var bytes = writer.WrittenSpan.ToArray();
                 await SaveBytesAsyncInternal(filename, bytes);
                 return bytes;
             }

@@ -11,8 +11,8 @@ namespace TSKT.Files
 {
     public interface ISerializeResolver
     {
-        ReadOnlySpan<byte> Serialize<T>(T obj);
-        Awaitable<byte[]> SerializeAsync<T>(T obj);
+        void Serialize<T>(T obj, IBufferWriter<byte> writer);
+        Awaitable SerializeAsync<T>(T obj, IBufferWriter<byte> writer);
         T Deserialize<T>(ReadOnlySpan<byte> bytes);
         Awaitable<T> DeserializeAsync<T>(byte[] bytes);
     }
@@ -42,59 +42,65 @@ namespace TSKT.Files
             this.compress = compress;
         }
 
-        public ReadOnlySpan<byte> Serialize<T>(T obj)
+        public void Serialize<T>(T obj, IBufferWriter<byte> writer)
         {
             var json = JsonUtility.ToJson(obj, prettyPrint: !compress && !ShouldCrypt);
-            ReadOnlySpan<byte> buffer;
+            Span<byte> jsonBytes = stackalloc byte[System.Text.Encoding.UTF8.GetMaxByteCount(json.Length)];
+            {
+                var l = System.Text.Encoding.UTF8.GetBytes(json, jsonBytes);
+                jsonBytes = jsonBytes[..l];
+            }
 
             if (compress)
             {
                 ReadOnlySpan<byte> body;
                 {
-                    Span<byte> bytes = stackalloc byte[System.Text.Encoding.UTF8.GetMaxByteCount(json.Length)];
-                    var l = System.Text.Encoding.UTF8.GetBytes(json, bytes);
-                    bytes = bytes[..l];
-
-                    var length = System.IO.Compression.BrotliEncoder.GetMaxCompressedLength(bytes.Length);
-                    var _writer = new ArrayBufferWriter<byte>(length);
-                    CompressUtil.CompressByBrotli(bytes, _writer);
-                    body = _writer.WrittenSpan;
+                    var length = System.IO.Compression.BrotliEncoder.GetMaxCompressedLength(jsonBytes.Length);
+                    var compressed = new ArrayBufferWriter<byte>(length);
+                    CompressUtil.CompressByBrotli(jsonBytes, compressed);
+                    body = compressed.WrittenSpan;
                 }
 
                 using var sha = new System.Security.Cryptography.SHA256Managed();
                 var hashSize = 256 / 8;
-                var writer = new ArrayBufferWriter<byte>(body.Length + hashSize);
-                if (!sha.TryComputeHash(body, writer.GetSpan(hashSize), out var written))
+                Span<byte> bytes = stackalloc byte[body.Length + hashSize];
+                if (!sha.TryComputeHash(body, bytes, out var written))
                 {
                     throw new Exception();
                 }
-                writer.Advance(written);
-                writer.Write(body);
-                buffer = writer.WrittenSpan;
+                body.CopyTo(bytes[written..]);
+                bytes = bytes[..(body.Length + written)];
+
+                if (ShouldCrypt)
+                {
+                    CryptUtil.Encrypt(bytes, password!, salt!, iterations, writer);
+                }
+                else
+                {
+                    writer.Write(bytes);
+                }
             }
             else
             {
-                buffer = System.Text.Encoding.UTF8.GetBytes(json);
+                if (ShouldCrypt)
+                {
+                    CryptUtil.Encrypt(jsonBytes, password!, salt!, iterations, writer);
+                }
+                else
+                {
+                    writer.Write(jsonBytes);
+                }
             }
-
-            if (ShouldCrypt)
-            {
-                var writer = new ArrayBufferWriter<byte>();
-                CryptUtil.Encrypt(buffer, password!, salt!, iterations, writer);
-                buffer = writer.WrittenSpan;
-            }
-            return buffer;
         }
 
-        public async Awaitable<byte[]> SerializeAsync<T>(T obj)
+        public async Awaitable SerializeAsync<T>(T obj, IBufferWriter<byte> writer)
         {
 #if UNITY_WEBGL
             return Serialize(obj).ToArray();
 #else
             await Awaitable.BackgroundThreadAsync();
-            var result = Serialize(obj).ToArray();
+            Serialize(obj, writer);
             await Awaitable.MainThreadAsync();
-            return result;
 #endif
         }
 
@@ -128,7 +134,9 @@ namespace TSKT.Files
                         }
                     }
 
-                    buffer = CompressUtil.DecompressByBrotli(buffer);
+                    var writer = new ArrayBufferWriter<byte>();
+                    CompressUtil.DecompressByBrotli(buffer, writer);
+                    buffer = writer.WrittenSpan;
                 }
 
                 var json = System.Text.Encoding.UTF8.GetString(buffer);
