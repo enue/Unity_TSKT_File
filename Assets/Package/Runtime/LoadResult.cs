@@ -9,7 +9,7 @@ namespace TSKT
     {
         public enum State
         {
-            Succeeded,
+            Succeeded = 1,
             NotFound,
             Error,
             FailedDeserialize,
