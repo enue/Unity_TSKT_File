@@ -13,7 +13,7 @@ namespace TSKT
             var request = Resources.LoadAsync<T>(path);
             if (progress != null)
             {
-                _ = Report(request, progress);
+                Report(request, progress).LogExceptionsAndForget();
             }
             await request;
             return (T)request.asset;
