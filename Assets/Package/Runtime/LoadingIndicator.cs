@@ -29,7 +29,7 @@ namespace TSKT
             try
             {
                 var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                progress.OperationCount.Where(_ => _ == 0).Take(1).Subscribe(_ => cts.Cancel()).RegisterTo(ct);
+                progress.OperationCount.Where(_ => _ == 0).TakeUntil(ct).Take(1).DoCancelOnCompleted(cts);
 
                 await Observable.Timer(System.TimeSpan.FromSeconds(delay)).FirstAsync(cts.Token);
 
