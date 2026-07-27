@@ -49,6 +49,9 @@ namespace TSKT
         readonly List<IItem> operations = new();
         float start = 0f;
         float normalizedStart = 0f;
+        float previousNormalizedValue = 0f;
+        float previousTotalValue = 0f;
+
         readonly ReactiveProperty<int> operationCount = new(0);
         public ReadOnlyReactiveProperty<int> OperationCount => operationCount;
 
@@ -72,55 +75,44 @@ namespace TSKT
  
         void Observe(IItem item)
         {
-            if (TryGetProgress(out var normalized, out var total))
-            {
-                normalizedStart = normalized;
-                start = total;
-            }
-            else
-            {
-                normalizedStart = 0f;
-                start = 0f;
-            }
+            normalizedStart = previousNormalizedValue;
+            start = previousTotalValue;
 
             operations.Add(item);
             operationCount.Value = operations.Count;
         }
 
-        bool TryGetProgress(out float normalized, out float total)
+
+        public float GetProgress()
         {
             if (operations.Count == 0)
             {
-                normalized = 0f;
-                total = 0f;
-                return false;
+                previousNormalizedValue = 0f;
+                previousTotalValue = 0f;
+
+                return 1f;
             }
             if (operations.TrueForAll(_ => _.IsDone))
             {
                 operations.Clear();
                 operationCount.Value = 0;
 
-                normalized = 0f;
-                total = 0f;
-                return false;
+                previousNormalizedValue = 0f;
+                previousTotalValue = 0f;
+
+                return 1f;
             }
 
-            total = operations.Sum(_ => _.Progress);
+            var total = operations.Sum(_ => _.Progress);
+            previousTotalValue = total;
 
             var min = start;
             var max = operations.Count;
             var t = Mathf.InverseLerp(min, max, total);
-            normalized = Mathf.Lerp(normalizedStart, 1f, t);
-            return true;
-        }
+            var normalized = Mathf.Lerp(normalizedStart, 1f, t);
+            previousNormalizedValue = normalized;
 
-        public float GetProgress()
-        {
-            if (TryGetProgress(out var normalized, out _))
-            {
-                return normalized;
-            }
-            return 1f;
+            return normalized;
         }
     }
 }
