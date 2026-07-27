@@ -28,14 +28,17 @@ namespace TSKT
         {
             try
             {
-                await Observable.Timer(System.TimeSpan.FromSeconds(delay)).FirstAsync(ct);
+                var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                progress.OperationCount.Where(_ => _ == 0).Take(1).Subscribe(_ => cts.Cancel()).RegisterTo(ct);
 
-                while (progress.OperationCount.CurrentValue > 0)
+                await Observable.Timer(System.TimeSpan.FromSeconds(delay)).FirstAsync(cts.Token);
+
+                gameObject.SetActive(true);
+
+                while (true)
                 {
-                    gameObject.SetActive(true);
                     value.fillAmount = progress.GetProgress();
-
-                    await Awaitable.NextFrameAsync(ct);
+                    await Awaitable.NextFrameAsync(cts.Token);
                 }
             }
             catch (System.OperationCanceledException)
