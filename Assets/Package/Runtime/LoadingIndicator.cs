@@ -40,8 +40,9 @@ namespace TSKT
             }
             catch (System.OperationCanceledException)
             {
-                gameObject.SetActive(false);
+                // nop
             }
+            gameObject.SetActive(false);
         }
     }
 }
