@@ -75,11 +75,28 @@ namespace TSKT
  
         void Observe(IItem item)
         {
+            TryClear();
+
             normalizedStart = previousNormalizedValue;
             start = previousTotalValue;
 
             operations.Add(item);
             operationCount.Value = operations.Count;
+        }
+
+        bool TryClear()
+        {
+            if (operations.TrueForAll(_ => _.IsDone))
+            {
+                operations.Clear();
+                operationCount.Value = 0;
+
+                previousNormalizedValue = 0f;
+                previousTotalValue = 0f;
+
+                return true;
+            }
+            return false;
         }
 
 
@@ -92,14 +109,8 @@ namespace TSKT
 
                 return 1f;
             }
-            if (operations.TrueForAll(_ => _.IsDone))
+            if (TryClear())
             {
-                operations.Clear();
-                operationCount.Value = 0;
-
-                previousNormalizedValue = 0f;
-                previousTotalValue = 0f;
-
                 return 1f;
             }
 
