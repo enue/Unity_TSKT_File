@@ -37,7 +37,7 @@ namespace TSKT
                 }
             }
 
-            result = await ResourcesUtil.LoadAsync<T>(path, _ => LoadingProgress.Instance.Add(_));
+            result = await ResourcesUtil.LoadAsync<T>(path, _ => LoadingProgress.Instance.Observe(_));
             cache[path] = result;
 
             return result;
