@@ -7,11 +7,11 @@ namespace TSKT
 {
     public static class ResourcesUtil
     {
-        public static async Awaitable<T> LoadAsync<T>(string path, LoadingProgress progress)
+        public static async Awaitable<T> LoadAsync<T>(string path, System.Action<ResourceRequest>? beforeComplete = null)
             where T : Object
         {
             var request = Resources.LoadAsync<T>(path);
-            progress.Add(request);
+            beforeComplete?.Invoke(request);
             await request;
             return (T)request.asset;
         }
@@ -20,22 +20,10 @@ namespace TSKT
             where T : Object
         {
             var request = Resources.LoadAsync<T>(path);
-            if (progress != null)
-            {
-                Report(request, progress).LogExceptionsAndForget();
-            }
+            progress?.Report(0.1f);
             await request;
+            progress?.Report(1f);
             return (T)request.asset;
-        }
-
-        static async Awaitable Report(ResourceRequest operation, System.IProgress<float> progress)
-        {
-            while (!operation.isDone)
-            {
-                progress.Report(operation.progress);
-                await Awaitable.NextFrameAsync();
-            }
-            progress.Report(1f);
         }
     }
 }
