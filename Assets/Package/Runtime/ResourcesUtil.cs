@@ -7,6 +7,15 @@ namespace TSKT
 {
     public static class ResourcesUtil
     {
+        public static async Awaitable<T> LoadAsync<T>(string path, LoadingProgress progress)
+            where T : Object
+        {
+            var request = Resources.LoadAsync<T>(path);
+            progress.Add(request);
+            await request;
+            return (T)request.asset;
+        }
+
         public static async Awaitable<T> LoadAsync<T>(string path, System.IProgress<float>? progress = null)
             where T : Object
         {
