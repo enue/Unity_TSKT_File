@@ -49,7 +49,9 @@ namespace TSKT
         readonly List<IItem> operations = new();
         float fixedTotalProgress = 0f;
         float fixedProgress = 0f;
-        public ReactiveProperty<int> OperationCount { get; } = new(0);
+        readonly ReactiveProperty<int> operationCount = new(0);
+        public ReadOnlyReactiveProperty<int> OperationCount => operationCount;
+
         LoadingProgress()
         {
             // nop;
@@ -78,7 +80,7 @@ namespace TSKT
             fixedTotalProgress = totalProgress;
 
             operations.Add(item);
-            OperationCount.Value = operations.Count;
+            operationCount.Value = operations.Count;
         }
 
         float GetProgress(out float totalProgress)
@@ -91,7 +93,7 @@ namespace TSKT
             if (operations.TrueForAll(_ => _.IsDone))
             {
                 operations.Clear();
-                OperationCount.Value = 0;
+                operationCount.Value = 0;
 
                 totalProgress = 0f;
                 return 1f;

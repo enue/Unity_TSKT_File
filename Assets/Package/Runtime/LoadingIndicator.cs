@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using R3;
+using System.Threading;
 
 namespace TSKT
 {
@@ -15,37 +16,31 @@ namespace TSKT
         [SerializeField]
         float delay = 1f;
 
-        float? time;
-
         void Start()
         {
-            LoadingProgress.Instance.OperationCount.Subscribe(_ =>
+            LoadingProgress.Instance.OperationCount.Where(_ => _ > 0).SubscribeAwait(async (_, ct) =>
             {
-                gameObject.SetActive(_ > 0);
-                if (_ == 0)
-                {
-                    time = null;
-                }
-            }).RegisterTo(destroyCancellationToken);
+                await Show(LoadingProgress.Instance, ct);
+            }, AwaitOperation.Drop).RegisterTo(destroyCancellationToken);
         }
-        void Update()
+
+        async Awaitable Show(TSKT.LoadingProgress progress, CancellationToken ct)
         {
-            var progress = LoadingProgress.Instance.GetProgress();
-            if (progress > 0f)
+            try
             {
-                if (!time.HasValue)
+                await Observable.Timer(System.TimeSpan.FromSeconds(delay)).FirstAsync(ct);
+
+                while (progress.OperationCount.CurrentValue > 0)
                 {
-                    time = Time.realtimeSinceStartup;
-                }
-                var elapsed = Time.realtimeSinceStartup - time;
-                if (elapsed > delay)
-                {
-                    value.fillAmount = progress;
+                    gameObject.SetActive(true);
+                    value.fillAmount = progress.GetProgress();
+
+                    await Awaitable.NextFrameAsync(ct);
                 }
             }
-            else
+            catch (System.OperationCanceledException)
             {
-                time = null;
+                gameObject.SetActive(false);
             }
         }
     }
