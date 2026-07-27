@@ -21,7 +21,7 @@ namespace TSKT
 
         public async static Awaitable<T> LoadAsync(string path)
         {
-            return await ResourcesUtil.LoadAsync<T>(path, LoadingProgress.Instance);
+            return await ResourcesUtil.LoadAsync<T>(path, _ => LoadingProgress.Instance.Add(_));
         }
         public static void Expire()
         {
