@@ -7,7 +7,7 @@ namespace TSKT
 {
     public static class ResourcesUtil
     {
-        public static async Awaitable<T> LoadAsync<T>(string path, System.Action<ResourceRequest>? beforeComplete = null)
+        public static async Awaitable<T> LoadAsync<T>(string path, System.Action<ResourceRequest> beforeComplete)
             where T : Object
         {
             var request = Resources.LoadAsync<T>(path);
