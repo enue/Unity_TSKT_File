@@ -6,14 +6,21 @@ using System.Linq;
 
 namespace TSKT
 {
-    public static class CachedResource<T>
+    public class CachedResource<T>
         where T : Object
     {
-        readonly static Dictionary<string, T?> cache = new();
+        static CachedResource<T>? instance;
+        static CachedResource<T> Instance => instance ??= new();
+        readonly Dictionary<string, T?> cache = new();
+
+        CachedResource()
+        {
+            Application.exitCancellationToken.Register(() => instance = null);
+        }
 
         public static T? Load(string path)
         {
-            if (cache.TryGetValue(path, out var result))
+            if (Instance.cache.TryGetValue(path, out var result))
             {
                 if (result)
                 {
@@ -23,13 +30,13 @@ namespace TSKT
 
             result = Resources.Load<T>(path);
 
-            cache[path] = result;
+            Instance.cache[path] = result;
             return result;
         }
 
         public async static Awaitable<T?> LoadAsync(string path)
         {
-            if (cache.TryGetValue(path, out var result))
+            if (Instance.cache.TryGetValue(path, out var result))
             {
                 if (result)
                 {
@@ -38,14 +45,14 @@ namespace TSKT
             }
 
             result = await ResourcesUtil.LoadAsync<T>(path, _ => LoadingProgress.Instance.Observe(_));
-            cache[path] = result;
+            Instance.cache[path] = result;
 
             return result;
         }
 
         public static void Expire()
         {
-            cache.Clear();
+            Instance.cache.Clear();
         }
     }
 }

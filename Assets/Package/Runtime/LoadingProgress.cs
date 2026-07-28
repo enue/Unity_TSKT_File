@@ -57,7 +57,7 @@ namespace TSKT
 
         LoadingProgress()
         {
-            // nop;
+            Application.exitCancellationToken.Register(() => instance = null);
         }
 
         public void Observe(AsyncOperation operation, float max = 1f)
