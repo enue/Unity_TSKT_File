@@ -48,6 +48,7 @@ namespace TSKT
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Init()
         {
+            instance?.operationCount.Dispose();
             instance = null;
         }
 #endif
@@ -64,7 +65,6 @@ namespace TSKT
 
         LoadingProgress()
         {
-            operationCount.RegisterTo(Application.exitCancellationToken);
         }
 
         public void Observe(AsyncOperation operation, float max = 1f)
