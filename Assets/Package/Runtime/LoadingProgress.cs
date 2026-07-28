@@ -44,12 +44,14 @@ namespace TSKT
         }
 
         static LoadingProgress? instance;
-        public static LoadingProgress Instance => instance ??= new();
+#if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Init()
         {
             instance = null;
         }
+#endif
+        public static LoadingProgress Instance => instance ??= new();
 
         readonly List<IItem> operations = new();
         float start = 0f;
