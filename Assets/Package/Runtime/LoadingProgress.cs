@@ -13,6 +13,7 @@ namespace TSKT
         {
             float Progress { get; }
             bool IsDone { get; }
+            bool Terminal { get; }
         }
 
         class AsyncOperationItem : IItem
@@ -25,14 +26,16 @@ namespace TSKT
                 this.operation = operation;
                 this.max = max;
             }
-            public float Progress => Mathf.Clamp01(operation.progress / max);
+            public float Progress => Mathf.Clamp01(operation.progress * max);
             public bool IsDone => operation.isDone;
+            public bool Terminal => max >= 1f;
         }
 
         class ProgressItem : IItem
         {
             public float Progress { get; private set; }
             public bool IsDone => Progress >= 1f;
+            public bool Terminal => true;
 
             public ProgressItem(System.Progress<float> progress)
             {
@@ -93,7 +96,7 @@ namespace TSKT
 
         bool TryClear()
         {
-            if (operations.TrueForAll(_ => _.IsDone))
+            if (operations.TrueForAll(_ => _.IsDone) && operations.Any(_ => _.Terminal))
             {
                 operations.Clear();
                 operationCount.Value = 0;
