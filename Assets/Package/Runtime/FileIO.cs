@@ -68,16 +68,7 @@ namespace TSKT
                 await toAwait;
             }
 
-            try
-            {
-                await SaveBytesAsyncInternal(filename, bytes);
-            }
-            catch (System.Exception)
-            {
-#if UNITY_EDITOR
-                throw;
-#endif
-            }
+            await SaveBytesAsyncInternal(filename, bytes);
 
             progress?.Report(1f);
             acs.TrySetResult();
@@ -94,16 +85,7 @@ namespace TSKT
                 await toAwait;
             }
 
-            try
-            {
-                await SaveBytesAsyncInternal(filename, bytes);
-            }
-            catch (System.Exception)
-            {
-#if UNITY_EDITOR
-                throw;
-#endif
-            }
+            await SaveBytesAsyncInternal(filename, bytes);
 
             progress?.Report(1f);
             acs.TrySetResult();

@@ -71,7 +71,6 @@ namespace TSKT.Files
         public async Awaitable SaveBytesAsync(string filename, byte[] data)
         {
             Directory.CreateDirectory(directory);
-
             var fullPath = GetPath(filename);
             await System.IO.File.WriteAllBytesAsync(fullPath, data);
         }
