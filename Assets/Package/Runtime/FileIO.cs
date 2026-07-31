@@ -15,7 +15,7 @@ namespace TSKT
         public Files.ILoadSaveResolver Resolver { get; }
         public Files.ISerializeResolver SerializeResolver { get; }
 
-        AwaitableCompletionSource? writingCompletion;
+        Awaitable? previousTask;
 
         public FileIO(Files.ILoadSaveResolver resolver, Files.ISerializeResolver serializeResolver)
         {
@@ -53,24 +53,24 @@ namespace TSKT
         /// </summary>
         public async Awaitable<byte[]> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
         {
-            var myCompletion = new AwaitableCompletionSource();
-            var previousCompletion = writingCompletion;
-            writingCompletion = myCompletion;
+            var toAwait = previousTask;
+            var acs = new AwaitableCompletionSource();
+            previousTask = acs.Awaitable;
+
+            var writer = new ArrayBufferWriter<byte>();
+            await SerializeResolver.SerializeAsync(obj, writer);
+            var bytes = writer.WrittenSpan.ToArray();
+
+            progress?.Report(0.5f);
+
+            if (toAwait != null)
+            {
+                await toAwait;
+            }
 
             try
             {
-                var writer = new ArrayBufferWriter<byte>();
-                await SerializeResolver.SerializeAsync(obj, writer);
-                progress?.Report(0.5f);
-
-                if (previousCompletion != null)
-                {
-                    await previousCompletion.Awaitable;
-                }
-
-                var bytes = writer.WrittenSpan.ToArray();
                 await SaveBytesAsyncInternal(filename, bytes);
-                return bytes;
             }
             catch (System.Exception)
             {
@@ -78,31 +78,24 @@ namespace TSKT
                 throw;
 #endif
             }
-            finally
-            {
-                progress?.Report(1f);
 
-                myCompletion.TrySetResult();
-                if (writingCompletion == myCompletion)
-                {
-                    writingCompletion = null;
-                }
-            }
+            progress?.Report(1f);
+            acs.TrySetResult();
+            return bytes;
         }
 
         public async Awaitable SaveBytesAsync(string filename, byte[] bytes, System.IProgress<float>? progress = null)
         {
-            var myCompletion = new AwaitableCompletionSource();
-            var previousCompletion = writingCompletion;
-            writingCompletion = myCompletion;
+            var toAwait = previousTask;
+            var acs = new AwaitableCompletionSource();
+            previousTask = acs.Awaitable;
+            if (toAwait != null)
+            {
+                await toAwait;
+            }
 
             try
             {
-                if (previousCompletion != null)
-                {
-                    await previousCompletion.Awaitable;
-                }
-
                 await SaveBytesAsyncInternal(filename, bytes);
             }
             catch (System.Exception)
@@ -111,16 +104,9 @@ namespace TSKT
                 throw;
 #endif
             }
-            finally
-            {
-                progress?.Report(1f);
 
-                myCompletion.TrySetResult();
-                if (writingCompletion == myCompletion)
-                {
-                    writingCompletion = null;
-                }
-            }
+            progress?.Report(1f);
+            acs.TrySetResult();
         }
 
         async Awaitable SaveBytesAsyncInternal(string filename, byte[] bytes)
