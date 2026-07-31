@@ -68,10 +68,15 @@ namespace TSKT
                 await toAwait;
             }
 
-            await SaveBytesAsyncInternal(filename, bytes);
-
-            progress?.Report(1f);
-            acs.TrySetResult();
+            try
+            {
+                await SaveBytesAsyncInternal(filename, bytes);
+            }
+            finally
+            {
+                progress?.Report(1f);
+                acs.TrySetResult();
+            }
             return bytes;
         }
 
@@ -84,11 +89,15 @@ namespace TSKT
             {
                 await toAwait;
             }
-
-            await SaveBytesAsyncInternal(filename, bytes);
-
-            progress?.Report(1f);
-            acs.TrySetResult();
+            try
+            {
+                await SaveBytesAsyncInternal(filename, bytes);
+            }
+            finally
+            {
+                progress?.Report(1f);
+                acs.TrySetResult();
+            }
         }
 
         async Awaitable SaveBytesAsyncInternal(string filename, byte[] bytes)
