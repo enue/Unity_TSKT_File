@@ -13,29 +13,28 @@ namespace TSKT
         {
             float Progress { get; }
             bool IsDone { get; }
-            bool Terminal { get; }
+            float IndicatorMax { get; }
         }
 
         class AsyncOperationItem : IItem
         {
             readonly AsyncOperation operation;
-            readonly float max;
+            public float IndicatorMax { get; }
 
             public AsyncOperationItem(AsyncOperation operation, float max)
             {
                 this.operation = operation;
-                this.max = max;
+                IndicatorMax = max;
             }
-            public float Progress => Mathf.Clamp01(operation.progress * max);
+            public float Progress => operation.progress;
             public bool IsDone => operation.isDone;
-            public bool Terminal => max >= 1f;
         }
 
         class ProgressItem : IItem
         {
             public float Progress { get; private set; }
             public bool IsDone => Progress >= 1f;
-            public bool Terminal => true;
+            public float IndicatorMax => 1f;
 
             public ProgressItem(System.Progress<float> progress)
             {
@@ -96,7 +95,7 @@ namespace TSKT
 
         bool TryClear()
         {
-            if (operations.TrueForAll(_ => _.IsDone) && operations.Any(_ => _.Terminal))
+            if (operations.TrueForAll(_ => _.IsDone) && operations.Any(_ => _.IndicatorMax >= 1f))
             {
                 operations.Clear();
                 operationCount.Value = 0;
@@ -127,10 +126,12 @@ namespace TSKT
             var total = operations.Sum(_ => _.Progress);
             previousTotalValue = total;
 
+            var indicatorMax = operations.Max(_ => _.IndicatorMax);
+
             var min = start;
             var max = operations.Count;
             var t = Mathf.InverseLerp(min, max, total);
-            var normalized = Mathf.Lerp(normalizedStart, 1f, t);
+            var normalized = Mathf.Lerp(normalizedStart, indicatorMax, t);
             previousNormalizedValue = normalized;
 
             return normalized;
