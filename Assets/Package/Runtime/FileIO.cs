@@ -72,6 +72,12 @@ namespace TSKT
                 await SaveBytesAsyncInternal(filename, bytes);
                 return bytes;
             }
+            catch (System.Exception)
+            {
+#if UNITY_EDITOR
+                throw;
+#endif
+            }
             finally
             {
                 progress?.Report(1f);
@@ -98,6 +104,12 @@ namespace TSKT
                 }
 
                 await SaveBytesAsyncInternal(filename, bytes);
+            }
+            catch (System.Exception)
+            {
+#if UNITY_EDITOR
+                throw;
+#endif
             }
             finally
             {
@@ -193,6 +205,12 @@ namespace TSKT
                     Debug.LogException(ex);
                     return LoadResult<T>.CreateFailedDeserialize(ex);
                 }
+            }
+            catch (System.Exception)
+            {
+#if UNITY_EDITOR
+                throw;
+#endif
             }
             finally
             {
