@@ -183,12 +183,17 @@ namespace TSKT
                     return LoadResult<T>.CreateFailedDeserialize(ex);
                 }
             }
+#if UNITY_EDITOR
             catch (System.Exception)
             {
-#if UNITY_EDITOR
                 throw;
-#endif
             }
+#else
+            catch (System.Exception ex)
+            {
+                return LoadResult<T>.CreateError(ex);
+            }
+#endif
             finally
             {
                 progress?.Report(1f);
