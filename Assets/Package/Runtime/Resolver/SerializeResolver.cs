@@ -96,7 +96,7 @@ namespace TSKT.Files
         public async Awaitable SerializeAsync<T>(T obj, IBufferWriter<byte> writer)
         {
 #if UNITY_WEBGL
-            return Serialize(obj).ToArray();
+            Serialize(obj, writer);
 #else
             await Awaitable.BackgroundThreadAsync();
             Serialize(obj, writer);
