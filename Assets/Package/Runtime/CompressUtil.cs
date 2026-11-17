@@ -42,23 +42,5 @@ namespace TSKT
                 if (status == OperationStatus.NeedMoreData) throw new Exception("truncated data");
             }
         }
-
-        public static byte[] Compress(ReadOnlySpan<byte> bytes)
-        {
-            using var compressed = new MemoryStream();
-            using (var stream = new DeflateStream(compressed, CompressionMode.Compress))
-            {
-                stream.Write(bytes);
-            }
-            return compressed.ToArray();
-        }
-        public static byte[] Decompress(byte[] bytes)
-        {
-            using var compressed = new MemoryStream(bytes);
-            using var deflateStream = new DeflateStream(compressed, CompressionMode.Decompress);
-            using var decompressed = new MemoryStream();
-            deflateStream.CopyTo(decompressed);
-            return decompressed.ToArray();
-        }
     }
 }

@@ -19,15 +19,8 @@ namespace TSKT.Files
 
     public class JsonResolver : ISerializeResolver
     {
-        readonly string? password;
-        readonly byte[]? salt;
-        readonly int iterations;
         readonly bool compress;
-        public bool ShouldCrypt => password != null;
-
-        // 鍵導出は重いので一度だけ行う。同じ値になるのでスレッド間で競合しても問題ない。
-        byte[]? key;
-        byte[] Key => key ??= CryptUtil.GenerateKey(password!, salt!, iterations);
+        readonly byte[]? key;
 
         public JsonResolver()
         {
@@ -35,10 +28,8 @@ namespace TSKT.Files
 
         public JsonResolver(string password, byte[] salt, int iterations)
         {
-            this.password = password;
-            this.salt = salt;
-            this.iterations = iterations;
-            compress = ShouldCrypt;
+            key = CryptUtil.GenerateKey(password, salt, iterations);
+            compress = true;
         }
 
         public JsonResolver(bool compress)
@@ -48,7 +39,7 @@ namespace TSKT.Files
 
         public void Serialize<T>(T obj, IBufferWriter<byte> writer)
         {
-            var json = JsonUtility.ToJson(obj, prettyPrint: !compress && !ShouldCrypt);
+            var json = JsonUtility.ToJson(obj, prettyPrint: !compress);
 
             // セーブデータは大きくなりうるのでstackallocは使わない（スタックオーバーフローする）
             var encoding = System.Text.Encoding.UTF8;
@@ -106,9 +97,9 @@ namespace TSKT.Files
         /// </summary>
         void Write(byte[] buffer, int length, IBufferWriter<byte> writer)
         {
-            if (ShouldCrypt)
+            if (key != null)
             {
-                CryptUtil.Encrypt(buffer, 0, length, Key, writer);
+                CryptUtil.Encrypt(buffer, 0, length, key, writer);
             }
             else
             {
@@ -136,73 +127,46 @@ namespace TSKT.Files
 
         public T Deserialize<T>(ReadOnlySpan<byte> bytes)
         {
-            try
+            ReadOnlySpan<byte> buffer;
+            if (key != null)
             {
-                ReadOnlySpan<byte> buffer;
-                if (ShouldCrypt)
-                {
-                    buffer = CryptUtil.Decrypt(bytes, Key);
-                }
-                else
-                {
-                    buffer = bytes;
-                }
-
-                string jsonString;
-                if (compress)
-                {
-                    //using var json = ZString.CreateUtf8StringBuilder();を使いたいがうまくいかないのでArrayBufferWriter
-                    var json = new ArrayBufferWriter<byte>();
-                    var hashSize = 256 / 8;
-                    var signature = buffer[..hashSize];
-                    var body = buffer[hashSize..];
-
-                    // decompressする前にハッシュチェックを行う。というのもbrotliに雑なデータを食わせるとクラッシュする。
-                    using (var sha = System.Security.Cryptography.SHA256.Create())
-                    {
-                        Span<byte> hashData = stackalloc byte[hashSize];
-                        if (!sha.TryComputeHash(body, hashData, out var written))
-                        {
-                            throw new Exception();
-                        }
-                        if (!signature.SequenceEqual(hashData[..written]))
-                        {
-                            throw new Exception();
-                        }
-                    }
-                    CompressUtil.DecompressByBrotli(body, json);
-                    jsonString = System.Text.Encoding.UTF8.GetString(json.WrittenSpan);
-                }
-                else
-                {
-                    jsonString = System.Text.Encoding.UTF8.GetString(buffer);
-                }
-
-                return FromJson<T>(jsonString);
+                buffer = CryptUtil.Decrypt(bytes, key);
             }
-            catch (Exception ex)
+            else
             {
-                try
-                {
-                    var buffer = bytes;
-                    if (ShouldCrypt)
-                    {
-                        // CryptUtil.Decryptでコケたときに旧形式で復号を試みる
-                        buffer = CryptUtil.DecryptByCommonIV(buffer, password!, salt!, iterations);
-                    }
-                    if (compress)
-                    {
-                        buffer = CompressUtil.Decompress(buffer.ToArray());
-                    }
-                    var json = System.Text.Encoding.UTF8.GetString(buffer);
-                    return FromJson<T>(json);
-                }
-                catch (Exception legacyException)
-                {
-                    // 旧形式でも読めなかった。現行形式で失敗した理由を先頭にして両方残す。
-                    throw new AggregateException("failed to deserialize as current format and as legacy format", ex, legacyException);
-                }
+                buffer = bytes;
             }
+
+            string jsonString;
+            if (compress)
+            {
+                //using var json = ZString.CreateUtf8StringBuilder();を使いたいがうまくいかないのでArrayBufferWriter
+                var json = new ArrayBufferWriter<byte>();
+                var signature = buffer[..HashSize];
+                var body = buffer[HashSize..];
+
+                // decompressする前にハッシュチェックを行う。というのもbrotliに雑なデータを食わせるとクラッシュする。
+                using (var sha = System.Security.Cryptography.SHA256.Create())
+                {
+                    Span<byte> hashData = stackalloc byte[HashSize];
+                    if (!sha.TryComputeHash(body, hashData, out var written))
+                    {
+                        throw new Exception("failed to compute hash");
+                    }
+                    if (!signature.SequenceEqual(hashData[..written]))
+                    {
+                        throw new System.IO.InvalidDataException("hash mismatch. data is broken or not in the expected format");
+                    }
+                }
+                CompressUtil.DecompressByBrotli(body, json);
+                jsonString = System.Text.Encoding.UTF8.GetString(json.WrittenSpan);
+            }
+            else
+            {
+                jsonString = System.Text.Encoding.UTF8.GetString(buffer);
+            }
+
+            return FromJson<T>(jsonString);
         }
 
         static T FromJson<T>(string json)

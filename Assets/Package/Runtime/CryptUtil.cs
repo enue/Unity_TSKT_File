@@ -9,13 +9,6 @@ namespace TSKT
 {
     public static class CryptUtil
     {
-        public static void GenerateKeyAndIV(out byte[] key, out byte[] iv, string password, byte[] salt, int iterations, int keySize, int blockSize)
-        {
-            // パスワードから共有キーと初期化ベクターを作成
-            using var deriveBytes = new Rfc2898DeriveBytes(password, salt, iterations: iterations);
-            key = deriveBytes.GetBytes(keySize / 8);
-            iv = deriveBytes.GetBytes(blockSize / 8);
-        }
         const int KeySize = 128;
         const int BlockSize = 128;
 
@@ -38,17 +31,17 @@ namespace TSKT
             return result;
         }
 
-        public static byte[] Encrypt(ReadOnlySpan<byte> bytes, string password, byte[] salt, int iterations)
+        public static byte[] Encrypt(ReadOnlySpan<byte> bytes, byte[] key)
         {
             var writer = new ArrayBufferWriter<byte>();
-            Encrypt(bytes.ToArray(), 0, bytes.Length, GenerateKey(password, salt, iterations), writer);
+            Encrypt(bytes.ToArray(), 0, bytes.Length, key, writer);
             return writer.WrittenSpan.ToArray();
         }
 
         /// <summary>
         /// 配列の一部をコピーなしで暗号化する。呼び出し側がすでに配列を持っているとき用。
         /// </summary>
-        internal static void Encrypt(byte[] buffer, int offset, int count, byte[] key, IBufferWriter<byte> writer)
+        public static void Encrypt(byte[] buffer, int offset, int count, byte[] key, IBufferWriter<byte> writer)
         {
             using var aes = CreateAes(key);
             using var encryptor = aes.CreateEncryptor();
@@ -58,11 +51,6 @@ namespace TSKT
             writer.Write(body);
         }
 
-        public static byte[] Decrypt(ReadOnlySpan<byte> encryptedBytes, string key, byte[] salt, int iterations)
-        {
-            return Decrypt(encryptedBytes, GenerateKey(key, salt, iterations));
-        }
-
         public static byte[] Decrypt(ReadOnlySpan<byte> encryptedBytes, byte[] key)
         {
             using var aes = CreateAes(key);
@@ -70,16 +58,6 @@ namespace TSKT
             aes.IV = iv;
             using var decryptor = aes.CreateDecryptor();
             return decryptor.TransformFinalBlock(encryptedBytes.ToArray(), iv.Length, encryptedBytes.Length - iv.Length);
-        }
-
-        [System.Obsolete]
-        public static byte[] DecryptByCommonIV(ReadOnlySpan<byte> encryptedBytes, string key, byte[] salt, int iterations)
-        {
-            GenerateKeyAndIV(out var keyBytes, out var iv, key, salt, iterations, KeySize, BlockSize);
-            using var aes = CreateAes(keyBytes);
-            aes.IV = iv;
-            using var decryptor = aes.CreateDecryptor();
-            return decryptor.TransformFinalBlock(encryptedBytes.ToArray(), 0, encryptedBytes.Length);
         }
     }
 }
