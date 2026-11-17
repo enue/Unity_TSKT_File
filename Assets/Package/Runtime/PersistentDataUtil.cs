@@ -8,7 +8,7 @@ namespace TSKT
     public static class PersistentDataUtil
     {
         public static NotNullFile<T> CreateJsonFile<T>(string filename)
-            where T : new()
+            where T : class, new()
         {
             var io = new FileIO(
                 resolver: new Files.FileResolver(Application.persistentDataPath),
@@ -16,7 +16,7 @@ namespace TSKT
             return new NotNullFile<T>(filename, io);
         }
         public static NotNullFile<T> CreateEncryptedFile<T>(string filename, string password, byte[] salt, int iterations)
-            where T : new()
+            where T : class, new()
         {
             var io = new FileIO(
                 resolver: new Files.FileResolver(Application.persistentDataPath),
@@ -25,6 +25,7 @@ namespace TSKT
         }
 
         public static NullableFile<T> CreateNullableEncryptedFile<T>(string filename, string password, byte[] salt, int iterations)
+            where T : class
         {
             var io = new FileIO(
                 resolver: new Files.FileResolver(Application.persistentDataPath),

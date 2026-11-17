@@ -6,13 +6,11 @@ using UnityEngine;
 namespace TSKT
 {
     public class NotNullFile<T>
-        where T : new()
+        where T : class, new()
     {
         public readonly string filename;
         readonly FileIO io;
         T? value;
-        // Tが構造体だとvalue == nullで未ロードを判定できないのでフラグで持つ
-        bool loaded;
 
         public NotNullFile(string filename, FileIO io)
         {
@@ -23,34 +21,31 @@ namespace TSKT
         {
             get
             {
-                if (!loaded || value == null)
+                if (value == null)
                 {
                     value = Resolve(io.Load<T>(filename));
-                    loaded = true;
                 }
                 return value;
             }
             set
             {
                 this.value = value;
-                loaded = true;
             }
         }
 
         public async Awaitable<T> LoadAsync(System.IProgress<float>? progress = null)
         {
-            if (loaded && value != null)
+            if (value != null)
             {
                 progress?.Report(1f);
                 return value;
             }
             var result = await io.LoadAsync<T>(filename, progress);
-            if (loaded && value != null)
+            if (value != null)
             {
                 return value;
             }
             value = Resolve(result);
-            loaded = true;
             return value;
         }
 
@@ -65,14 +60,14 @@ namespace TSKT
 
         public void Save()
         {
-            if (loaded && value != null)
+            if (value != null)
             {
                 io.Save(filename, value);
             }
         }
         public async Awaitable SaveAsync(System.IProgress<float>? progress = null)
         {
-            if (!loaded || value == null)
+            if (value == null)
             {
                 progress?.Report(1f);
             }
