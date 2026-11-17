@@ -15,7 +15,9 @@ namespace TSKT
         public Files.ILoadSaveResolver Resolver { get; }
         public Files.ISerializeResolver SerializeResolver { get; }
 
-        Awaitable? previousTask;
+        // 最後に並んだ非同期セーブが終わると完了するタスク。次のセーブはこれを待ってから書き込む。
+        // SemaphoreSlimは待ちの解除にスレッドプールを使うのでWebGLでは止まる。TaskCompletionSourceなら使わない。
+        System.Threading.Tasks.Task saveTail = System.Threading.Tasks.Task.CompletedTask;
 
         public FileIO(Files.ILoadSaveResolver resolver, Files.ISerializeResolver serializeResolver)
         {
@@ -23,29 +25,34 @@ namespace TSKT
             SerializeResolver = serializeResolver;
         }
 
-        public ReadOnlySpan<byte> Save<T>(string filename, T obj)
+        public byte[] Save<T>(string filename, T obj)
         {
             var writer = new ArrayBufferWriter<byte>();
             SerializeResolver.Serialize(obj, writer);
-            var result = writer.WrittenSpan;
-            SaveBytes(filename, result);
-            return result;
+            var bytes = writer.WrittenSpan.ToArray();
+            if (!IsCached(filename, bytes))
+            {
+                Resolver.SaveBytes(filename, bytes);
+                cache[filename] = new(bytes);
+            }
+            return bytes;
         }
 
         public void SaveBytes(string filename, ReadOnlySpan<byte> bytes)
         {
-            if (cache.TryGetValue(filename, out var previous))
+            if (IsCached(filename, bytes))
             {
-                if (previous.Succeeded)
-                {
-                    if (bytes.SequenceEqual(previous.value))
-                    {
-                        return;
-                    }
-                }
+                return;
             }
             Resolver.SaveBytes(filename, bytes);
             cache[filename] = new(bytes.ToArray());
+        }
+
+        bool IsCached(string filename, ReadOnlySpan<byte> bytes)
+        {
+            return cache.TryGetValue(filename, out var previous)
+                && previous.Succeeded
+                && bytes.SequenceEqual(previous.value);
         }
 
         /// <summary>
@@ -53,64 +60,67 @@ namespace TSKT
         /// </summary>
         public async Awaitable<byte[]> SaveAsync<T>(string filename, T obj, System.IProgress<float>? progress = null)
         {
-            var toAwait = previousTask;
-            var acs = new AwaitableCompletionSource();
-            previousTask = acs.Awaitable;
-
-            var writer = new ArrayBufferWriter<byte>();
-            await SerializeResolver.SerializeAsync(obj, writer);
-            var bytes = writer.WrittenSpan.ToArray();
-
-            progress?.Report(0.5f);
-
-            if (toAwait != null)
-            {
-                await toAwait;
-            }
+            // シリアライズより先に並んでおく。書き込みを呼び出し順にするため。
+            var turn = EnqueueSave(out var done);
 
             try
             {
+                byte[] bytes;
+                try
+                {
+                    var writer = new ArrayBufferWriter<byte>();
+                    await SerializeResolver.SerializeAsync(obj, writer);
+                    bytes = writer.WrittenSpan.ToArray();
+
+                    progress?.Report(0.5f);
+                }
+                finally
+                {
+                    // シリアライズに失敗しても順番は待つ。待たずに次へ番を渡すと先行のセーブと並走してしまう。
+                    await turn;
+                }
+
                 await SaveBytesAsyncInternal(filename, bytes);
+                return bytes;
             }
             finally
             {
                 progress?.Report(1f);
-                acs.TrySetResult();
+                done.TrySetResult(true);
             }
-            return bytes;
         }
 
         public async Awaitable SaveBytesAsync(string filename, byte[] bytes, System.IProgress<float>? progress = null)
         {
-            var toAwait = previousTask;
-            var acs = new AwaitableCompletionSource();
-            previousTask = acs.Awaitable;
-            if (toAwait != null)
-            {
-                await toAwait;
-            }
+            var turn = EnqueueSave(out var done);
             try
             {
+                await turn;
                 await SaveBytesAsyncInternal(filename, bytes);
             }
             finally
             {
                 progress?.Report(1f);
-                acs.TrySetResult();
+                done.TrySetResult(true);
             }
+        }
+
+        /// <summary>
+        /// 非同期セーブの列に並ぶ。戻り値は自分の番が来たら完了する。終わったらdoneを完了させて次へ番を渡すこと。
+        /// </summary>
+        System.Threading.Tasks.Task EnqueueSave(out System.Threading.Tasks.TaskCompletionSource<bool> done)
+        {
+            var turn = saveTail;
+            done = new System.Threading.Tasks.TaskCompletionSource<bool>();
+            saveTail = done.Task;
+            return turn;
         }
 
         async Awaitable SaveBytesAsyncInternal(string filename, byte[] bytes)
         {
-            if (cache.TryGetValue(filename, out var previous))
+            if (IsCached(filename, bytes))
             {
-                if (previous.Succeeded)
-                {
-                    if (previous.value.SequenceEqual(bytes))
-                    {
-                        return;
-                    }
-                }
+                return;
             }
             using (new PreventFromQuitting(null))
             {

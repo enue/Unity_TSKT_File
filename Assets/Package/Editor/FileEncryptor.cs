@@ -48,7 +48,7 @@ namespace TSKT
                 byte[] encryptedBytes;
                 if (compress)
                 {
-                    encryptedBytes = CryptUtil.Encrypt(CompressUtil.Compress(bytes), password, saltBytes, iterations).ToArray();
+                    encryptedBytes = CryptUtil.Encrypt(CompressUtil.Compress(bytes), password, saltBytes, iterations);
                     var t = CompressUtil.Decompress(CryptUtil.Decrypt(encryptedBytes, password, saltBytes, iterations));
                     if (!bytes.SequenceEqual(t))
                     {
@@ -58,7 +58,7 @@ namespace TSKT
                 }
                 else
                 {
-                    encryptedBytes = CryptUtil.Encrypt(bytes, password, saltBytes, iterations).ToArray();
+                    encryptedBytes = CryptUtil.Encrypt(bytes, password, saltBytes, iterations);
                     var t = CryptUtil.Decrypt(encryptedBytes, password, saltBytes, iterations);
                     if (!bytes.SequenceEqual(t))
                     {

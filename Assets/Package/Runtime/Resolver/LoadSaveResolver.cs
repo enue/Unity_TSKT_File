@@ -72,14 +72,77 @@ namespace TSKT.Files
         {
             Directory.CreateDirectory(directory);
             var fullPath = GetPath(filename);
-            await System.IO.File.WriteAllBytesAsync(fullPath, data);
+            var tempPath = GetTempPath(fullPath);
+            try
+            {
+                await System.IO.File.WriteAllBytesAsync(tempPath, data);
+                Commit(tempPath, fullPath);
+            }
+            catch
+            {
+                TryDelete(tempPath);
+                throw;
+            }
         }
 
         public void SaveBytes(string filename, ReadOnlySpan<byte> data)
         {
             Directory.CreateDirectory(directory);
             var fullPath = GetPath(filename);
-            File.WriteAllBytes(fullPath, data.ToArray());
+            var tempPath = GetTempPath(fullPath);
+            try
+            {
+                // File.WriteAllBytesだと配列へのコピーが要るので、ストリームに直接書く
+                using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    stream.Write(data);
+                }
+                Commit(tempPath, fullPath);
+            }
+            catch
+            {
+                TryDelete(tempPath);
+                throw;
+            }
+        }
+
+        static string GetTempPath(string fullPath)
+        {
+            return fullPath + ".tmp";
+        }
+
+        /// <summary>
+        /// 一時ファイルを本番のファイルに差し替える。書き込み途中で落ちても元のファイルが壊れないようにするため。
+        /// </summary>
+        static void Commit(string tempPath, string fullPath)
+        {
+            if (!File.Exists(fullPath))
+            {
+                File.Move(tempPath, fullPath);
+                return;
+            }
+            try
+            {
+                File.Replace(tempPath, fullPath, null);
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // Replaceが使えない環境では消してから移動する。この間だけはアトミックではない。
+                File.Delete(fullPath);
+                File.Move(tempPath, fullPath);
+            }
+        }
+
+        static void TryDelete(string path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception)
+            {
+                // 後始末の失敗で元の例外を潰さない
+            }
         }
 
         public async Awaitable<LoadResult<byte[]>> LoadBytesAsync(string filename)

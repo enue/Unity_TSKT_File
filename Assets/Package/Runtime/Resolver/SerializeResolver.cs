@@ -25,6 +25,10 @@ namespace TSKT.Files
         readonly bool compress;
         public bool ShouldCrypt => password != null;
 
+        // 鍵導出は重いので一度だけ行う。同じ値になるのでスレッド間で競合しても問題ない。
+        byte[]? key;
+        byte[] Key => key ??= CryptUtil.GenerateKey(password!, salt!, iterations);
+
         public JsonResolver()
         {
         }
@@ -45,51 +49,70 @@ namespace TSKT.Files
         public void Serialize<T>(T obj, IBufferWriter<byte> writer)
         {
             var json = JsonUtility.ToJson(obj, prettyPrint: !compress && !ShouldCrypt);
-            Span<byte> jsonBytes = stackalloc byte[System.Text.Encoding.UTF8.GetMaxByteCount(json.Length)];
+
+            // セーブデータは大きくなりうるのでstackallocは使わない（スタックオーバーフローする）
+            var encoding = System.Text.Encoding.UTF8;
+            var rented = ArrayPool<byte>.Shared.Rent(encoding.GetByteCount(json));
+            try
             {
-                var l = System.Text.Encoding.UTF8.GetBytes(json, jsonBytes);
-                jsonBytes = jsonBytes[..l];
-            }
+                var jsonLength = encoding.GetBytes(json, rented);
 
-            if (compress)
-            {
-                ReadOnlySpan<byte> body;
+                if (compress)
                 {
-                    var length = System.IO.Compression.BrotliEncoder.GetMaxCompressedLength(jsonBytes.Length);
-                    var compressed = new ArrayBufferWriter<byte>(length);
-                    CompressUtil.CompressByBrotli(jsonBytes, compressed);
-                    body = compressed.WrittenSpan;
-                }
-
-                using var sha = new System.Security.Cryptography.SHA256Managed();
-                var hashSize = 256 / 8;
-                Span<byte> bytes = stackalloc byte[body.Length + hashSize];
-                if (!sha.TryComputeHash(body, bytes, out var written))
-                {
-                    throw new Exception();
-                }
-                body.CopyTo(bytes[written..]);
-                bytes = bytes[..(body.Length + written)];
-
-                if (ShouldCrypt)
-                {
-                    CryptUtil.Encrypt(bytes, password!, salt!, iterations, writer);
+                    WriteCompressed(rented.AsSpan(0, jsonLength), writer);
                 }
                 else
                 {
-                    writer.Write(bytes);
+                    Write(rented, jsonLength, writer);
                 }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
+
+        const int HashSize = 256 / 8;
+
+        /// <summary>
+        /// 「ハッシュ + 圧縮データ」の形にして書き出す。コピーを減らすため、一つのバッファにハッシュの分を空けて直接圧縮する。
+        /// </summary>
+        void WriteCompressed(ReadOnlySpan<byte> jsonBytes, IBufferWriter<byte> writer)
+        {
+            var buffer = ArrayPool<byte>.Shared.Rent(HashSize + System.IO.Compression.BrotliEncoder.GetMaxCompressedLength(jsonBytes.Length));
+            try
+            {
+                var bodyLength = CompressUtil.CompressByBrotli(jsonBytes, buffer.AsSpan(HashSize));
+
+                using (var sha = System.Security.Cryptography.SHA256.Create())
+                {
+                    if (!sha.TryComputeHash(buffer.AsSpan(HashSize, bodyLength), buffer.AsSpan(0, HashSize), out var written)
+                        || written != HashSize)
+                    {
+                        throw new Exception("failed to compute hash");
+                    }
+                }
+
+                Write(buffer, HashSize + bodyLength, writer);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        /// <summary>
+        /// bufferの先頭からlengthバイトを、必要なら暗号化して書き出す。
+        /// </summary>
+        void Write(byte[] buffer, int length, IBufferWriter<byte> writer)
+        {
+            if (ShouldCrypt)
+            {
+                CryptUtil.Encrypt(buffer, 0, length, Key, writer);
             }
             else
             {
-                if (ShouldCrypt)
-                {
-                    CryptUtil.Encrypt(jsonBytes, password!, salt!, iterations, writer);
-                }
-                else
-                {
-                    writer.Write(jsonBytes);
-                }
+                writer.Write(buffer.AsSpan(0, length));
             }
         }
 
@@ -99,8 +122,15 @@ namespace TSKT.Files
             Serialize(obj, writer);
 #else
             await Awaitable.BackgroundThreadAsync();
-            Serialize(obj, writer);
-            await Awaitable.MainThreadAsync();
+            try
+            {
+                Serialize(obj, writer);
+            }
+            finally
+            {
+                // 例外時も呼び出し元をメインスレッドに戻す
+                await Awaitable.MainThreadAsync();
+            }
 #endif
         }
 
@@ -111,23 +141,24 @@ namespace TSKT.Files
                 ReadOnlySpan<byte> buffer;
                 if (ShouldCrypt)
                 {
-                    buffer = CryptUtil.Decrypt(bytes.ToArray(), password!, salt!, iterations);
+                    buffer = CryptUtil.Decrypt(bytes, Key);
                 }
                 else
                 {
                     buffer = bytes;
                 }
 
-                //using var json = ZString.CreateUtf8StringBuilder();を使いたいがうまくいかないのでArrayBufferWriter
-                var json = new ArrayBufferWriter<byte>();
+                string jsonString;
                 if (compress)
                 {
+                    //using var json = ZString.CreateUtf8StringBuilder();を使いたいがうまくいかないのでArrayBufferWriter
+                    var json = new ArrayBufferWriter<byte>();
                     var hashSize = 256 / 8;
                     var signature = buffer[..hashSize];
                     var body = buffer[hashSize..];
 
                     // decompressする前にハッシュチェックを行う。というのもbrotliに雑なデータを食わせるとクラッシュする。
-                    using (var sha = new System.Security.Cryptography.SHA256Managed())
+                    using (var sha = System.Security.Cryptography.SHA256.Create())
                     {
                         Span<byte> hashData = stackalloc byte[hashSize];
                         if (!sha.TryComputeHash(body, hashData, out var written))
@@ -140,30 +171,49 @@ namespace TSKT.Files
                         }
                     }
                     CompressUtil.DecompressByBrotli(body, json);
+                    jsonString = System.Text.Encoding.UTF8.GetString(json.WrittenSpan);
                 }
                 else
                 {
-                    json.Write(buffer);
+                    jsonString = System.Text.Encoding.UTF8.GetString(buffer);
                 }
 
-                var jsonString = System.Text.Encoding.UTF8.GetString(json.WrittenSpan);
-                return JsonUtility.FromJson<T>(jsonString);
+                return FromJson<T>(jsonString);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                var buffer = bytes;
-                if (ShouldCrypt)
+                try
                 {
-                    // CryptUtil.Decryptでコケたときに旧形式で復号を試みる
-                    buffer = CryptUtil.DecryptByCommonIV(buffer, password!, salt!, iterations);
+                    var buffer = bytes;
+                    if (ShouldCrypt)
+                    {
+                        // CryptUtil.Decryptでコケたときに旧形式で復号を試みる
+                        buffer = CryptUtil.DecryptByCommonIV(buffer, password!, salt!, iterations);
+                    }
+                    if (compress)
+                    {
+                        buffer = CompressUtil.Decompress(buffer.ToArray());
+                    }
+                    var json = System.Text.Encoding.UTF8.GetString(buffer);
+                    return FromJson<T>(json);
                 }
-                if (compress)
+                catch (Exception legacyException)
                 {
-                    buffer = CompressUtil.Decompress(buffer.ToArray());
+                    // 旧形式でも読めなかった。現行形式で失敗した理由を先頭にして両方残す。
+                    throw new AggregateException("failed to deserialize as current format and as legacy format", ex, legacyException);
                 }
-                var json = System.Text.Encoding.UTF8.GetString(buffer);
-                return JsonUtility.FromJson<T>(json);
             }
+        }
+
+        static T FromJson<T>(string json)
+        {
+            // 空ファイルなどではFromJsonがnullを返す。成功扱いにすると呼び出し側にnullが渡るので失敗にする。
+            var result = JsonUtility.FromJson<T>(json);
+            if (result == null)
+            {
+                throw new Exception("empty json");
+            }
+            return result;
         }
 
         public async Awaitable<T> DeserializeAsync<T>(byte[] bytes)
@@ -172,9 +222,15 @@ namespace TSKT.Files
             return Deserialize<T>(bytes);
 #else
             await Awaitable.BackgroundThreadAsync();
-            var result = Deserialize<T>(bytes);
-            await Awaitable.MainThreadAsync();
-            return result;
+            try
+            {
+                return Deserialize<T>(bytes);
+            }
+            finally
+            {
+                // 例外時も呼び出し元をメインスレッドに戻す
+                await Awaitable.MainThreadAsync();
+            }
 #endif
         }
 

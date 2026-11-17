@@ -8,7 +8,8 @@ namespace TSKT
     {
         public static (string publicKey, string privateKey) GenerateKeys()
         {
-            using var rsa = new System.Security.Cryptography.RSACryptoServiceProvider();
+            // 既定の鍵長は1024ビットで弱いので明示する
+            using var rsa = new System.Security.Cryptography.RSACryptoServiceProvider(2048);
             var publicKey = rsa.ToXmlString(false);
             var privateKey = rsa.ToXmlString(true);
             return (publicKey, privateKey);
@@ -22,7 +23,7 @@ namespace TSKT
 
         public static byte[] CreateDigitalSignature(byte[] bytes, string privateKey)
         {
-            using var sha = new System.Security.Cryptography.SHA256Managed();
+            using var sha = System.Security.Cryptography.SHA256.Create();
             var hashData = sha.ComputeHash(bytes);
 
             using var rsa = new System.Security.Cryptography.RSACryptoServiceProvider();
@@ -43,7 +44,7 @@ namespace TSKT
 
         public static bool VerifyDigitalSignature(byte[] bytes, byte[] signature, string publicKey)
         {
-            using var sha = new System.Security.Cryptography.SHA256Managed();
+            using var sha = System.Security.Cryptography.SHA256.Create();
             var hashData = sha.ComputeHash(bytes);
 
             using var rsa = new System.Security.Cryptography.RSACryptoServiceProvider();

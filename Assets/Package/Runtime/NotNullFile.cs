@@ -11,6 +11,8 @@ namespace TSKT
         public readonly string filename;
         readonly FileIO io;
         T? value;
+        // Tが構造体だとvalue == nullで未ロードを判定できないのでフラグで持つ
+        bool loaded;
 
         public NotNullFile(string filename, FileIO io)
         {
@@ -21,59 +23,56 @@ namespace TSKT
         {
             get
             {
-                if (value == null)
+                if (!loaded || value == null)
                 {
-                    var result = io.Load<T>(filename);
-                    if (result.Succeeded)
-                    {
-                        value = result.value;
-                    }
-                    else
-                    {
-                        value = new T();
-                    }
+                    value = Resolve(io.Load<T>(filename));
+                    loaded = true;
                 }
                 return value;
             }
             set
             {
                 this.value = value;
+                loaded = true;
             }
         }
 
         public async Awaitable<T> LoadAsync(System.IProgress<float>? progress = null)
         {
-            if (value != null)
+            if (loaded && value != null)
             {
                 progress?.Report(1f);
                 return value;
             }
             var result = await io.LoadAsync<T>(filename, progress);
-            if (value != null)
+            if (loaded && value != null)
             {
                 return value;
             }
+            value = Resolve(result);
+            loaded = true;
+            return value;
+        }
+
+        T Resolve(LoadResult<T> result)
+        {
             if (result.Succeeded)
             {
-                value = result.value;
+                return result.value;
             }
-            else
-            {
-                value = new T();
-            }
-            return value;
+            return new T();
         }
 
         public void Save()
         {
-            if (value != null)
+            if (loaded && value != null)
             {
                 io.Save(filename, value);
             }
         }
         public async Awaitable SaveAsync(System.IProgress<float>? progress = null)
         {
-            if (value == null)
+            if (!loaded || value == null)
             {
                 progress?.Report(1f);
             }

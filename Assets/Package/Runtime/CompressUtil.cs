@@ -1,124 +1,45 @@
 ﻿#nullable enable
-using UnityEngine;
-using System.Collections;
 using System;
-using System.Text;
 using System.IO;
 using System.IO.Compression;
-using System.Security.Cryptography;
 using System.Buffers;
 
 namespace TSKT
 {
     public static class CompressUtil
     {
-        public static ReadOnlySpan<byte> CompressByBrotli(ReadOnlySpan<byte> source)
-        {
-            var length = BrotliEncoder.GetMaxCompressedLength(source.Length);
-            var writer = new ArrayBufferWriter<byte>(length);
-            CompressByBrotli(source, writer);
-            return writer.WrittenSpan;
-        }
+        const int BrotliQuality = 4;
+        const int BrotliWindow = 24;
 
-        public static void CompressByBrotli(ReadOnlySpan<byte> source, IBufferWriter<byte> writer)
-        {
-            using var encoder = new BrotliEncoder(11, 24);
+        // IBufferWriterに要求する最小の空き。指定しないと数バイトの領域が返ってループ回数が増える。
+        const int BufferSizeHint = 16 * 1024;
 
-            for (; ; )
+        /// <summary>
+        /// destinationに圧縮して、書き込んだバイト数を返す。destinationはBrotliEncoder.GetMaxCompressedLength(source.Length)以上の長さが必要。
+        /// </summary>
+        public static int CompressByBrotli(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            if (!BrotliEncoder.TryCompress(source, destination, out var written, BrotliQuality, BrotliWindow))
             {
-                var status = encoder.Compress(source, writer.GetSpan(), out var consumed, out var written, false);
-                if (status == OperationStatus.InvalidData) throw new Exception("invalid data");
-
-                source = source[consumed..];
-                writer.Advance(written);
-                if (status == OperationStatus.Done) break;
+                throw new Exception("failed to compress");
             }
-
-            for (; ; )
-            {
-                var status = encoder.Compress(ReadOnlySpan<byte>.Empty, writer.GetSpan(), out _, out var written, true);
-                if (status == OperationStatus.InvalidData) throw new Exception("invalid data");
-
-                writer.Advance(written);
-                if (written == 0) break;
-            }
+            return written;
         }
 
-        public static ReadOnlySpan<byte> CompressByBrotli(ReadOnlySequence<byte> sequence)
-        {
-            var length = BrotliEncoder.GetMaxCompressedLength((int)sequence.Length);
-            var writer = new ArrayBufferWriter<byte>(length);
-            CompressByBrotli(sequence, writer);
-            return writer.WrittenSpan;
-        }
-
-        public static void CompressByBrotli(ReadOnlySequence<byte> sequence, IBufferWriter<byte> writer)
-        {
-            using var encoder = new BrotliEncoder(11, 24);
-
-            var reader = new SequenceReader<byte>(sequence);
-
-            for (; ; )
-            {
-                var status = encoder.Compress(reader.UnreadSpan, writer.GetSpan(), out var consumed, out var written, false);
-                if (status == OperationStatus.InvalidData) throw new Exception("invalid data");
-
-                reader.Advance(consumed);
-                writer.Advance(written);
-                if (status == OperationStatus.Done) break;
-            }
-
-            for (; ; )
-            {
-                var status = encoder.Compress(ReadOnlySpan<byte>.Empty, writer.GetSpan(), out _, out var written, true);
-                if (status == OperationStatus.InvalidData) throw new Exception("invalid data");
-
-                writer.Advance(written);
-                if (written == 0) break;
-            }
-        }
-
-        public static ReadOnlySpan<byte> DecompressByBrotli(ReadOnlySpan<byte> source)
-        {
-            var writer = new ArrayBufferWriter<byte>();
-            DecompressByBrotli(source, writer);
-            return writer.WrittenSpan;
-        }
         public static void DecompressByBrotli(ReadOnlySpan<byte> source, IBufferWriter<byte> writer)
         {
             using var decoder = new BrotliDecoder();
 
             for (; ; )
             {
-                var status = decoder.Decompress(source, writer.GetSpan(), out var consumed, out var written);
+                var status = decoder.Decompress(source, writer.GetSpan(BufferSizeHint), out var consumed, out var written);
                 if (status == OperationStatus.InvalidData) throw new Exception("invalid data");
 
                 source = source[consumed..];
                 writer.Advance(written);
-                if (written == 0) break;
-            }
-        }
-
-        public static ReadOnlySpan<byte> DecompressByBrotli(ReadOnlySequence<byte> sequence)
-        {
-            var writer = new ArrayBufferWriter<byte>();
-            DecompressByBrotli(sequence, writer);
-            return writer.WrittenSpan;
-        }
-        public static void DecompressByBrotli(ReadOnlySequence<byte> sequence, IBufferWriter<byte> writer)
-        {
-            var reader = new SequenceReader<byte>(sequence);
-
-            using var decoder = new BrotliDecoder();
-
-            for (; ; )
-            {
-                var status = decoder.Decompress(reader.UnreadSpan, writer.GetSpan(), out var consumed, out var written);
-                if (status == OperationStatus.InvalidData) throw new Exception("invalid data");
-
-                reader.Advance(consumed);
-                writer.Advance(written);
-                if (written == 0) break;
+                if (status == OperationStatus.Done) break;
+                // 入力は全部渡しているので、足りないなら途中で切れたデータ
+                if (status == OperationStatus.NeedMoreData) throw new Exception("truncated data");
             }
         }
 

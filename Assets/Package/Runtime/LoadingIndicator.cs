@@ -18,6 +18,9 @@ namespace TSKT
 
         void Start()
         {
+            // ロードが始まるまでは隠しておく。非アクティブでも購読は生きている。
+            gameObject.SetActive(false);
+
             LoadingProgress.Instance.OperationCount.Where(_ => _ > 0).SubscribeAwait(async (_, ct) =>
             {
                 await Show(LoadingProgress.Instance, ct);
@@ -26,11 +29,12 @@ namespace TSKT
 
         async Awaitable Show(TSKT.LoadingProgress progress, CancellationToken ct)
         {
+            // 表示が終わるたびに破棄する。宣言と逆順に破棄されるので、購読が先に止まってからctsが破棄される。
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            using var subscription = progress.OperationCount.Where(_ => _ == 0).Take(1).DoCancelOnCompleted(cts).Subscribe();
+
             try
             {
-                var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                progress.OperationCount.Where(_ => _ == 0).Take(1).DoCancelOnCompleted(cts).Subscribe().RegisterTo(ct);
-
                 await Observable.Timer(System.TimeSpan.FromSeconds(delay)).FirstAsync(cts.Token);
 
                 gameObject.SetActive(true);
