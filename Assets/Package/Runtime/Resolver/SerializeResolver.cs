@@ -19,7 +19,6 @@ namespace TSKT.Files
 
     public class JsonResolver : ISerializeResolver
     {
-        readonly bool compress;
         readonly byte[]? key;
 
         public JsonResolver()
@@ -29,17 +28,12 @@ namespace TSKT.Files
         public JsonResolver(string password, byte[] salt, int iterations)
         {
             key = CryptUtil.GenerateKey(password, salt, iterations);
-            compress = true;
         }
 
-        public JsonResolver(bool compress)
-        {
-            this.compress = compress;
-        }
 
         public void Serialize<T>(T obj, IBufferWriter<byte> writer)
         {
-            var json = JsonUtility.ToJson(obj, prettyPrint: !compress);
+            var json = JsonUtility.ToJson(obj, prettyPrint: key == null);
 
             // セーブデータは大きくなりうるのでstackallocは使わない（スタックオーバーフローする）
             var encoding = System.Text.Encoding.UTF8;
@@ -48,13 +42,13 @@ namespace TSKT.Files
             {
                 var jsonLength = encoding.GetBytes(json, rented);
 
-                if (compress)
+                if (key != null)
                 {
-                    WriteCompressed(rented.AsSpan(0, jsonLength), writer);
+                    WriteEncrypted(rented.AsSpan(0, jsonLength), key, writer);
                 }
                 else
                 {
-                    Write(rented, jsonLength, writer);
+                    writer.Write(rented.AsSpan(0, jsonLength));
                 }
             }
             finally
@@ -66,9 +60,9 @@ namespace TSKT.Files
         const int HashSize = 256 / 8;
 
         /// <summary>
-        /// 「ハッシュ + 圧縮データ」の形にして書き出す。コピーを減らすため、一つのバッファにハッシュの分を空けて直接圧縮する。
+        /// 圧縮して「ハッシュ + 圧縮データ」の形にし、それを暗号化して書き出す。コピーを減らすため、一つのバッファにハッシュの分を空けて直接圧縮する。
         /// </summary>
-        void WriteCompressed(ReadOnlySpan<byte> jsonBytes, IBufferWriter<byte> writer)
+        static void WriteEncrypted(ReadOnlySpan<byte> jsonBytes, byte[] key, IBufferWriter<byte> writer)
         {
             var buffer = ArrayPool<byte>.Shared.Rent(HashSize + System.IO.Compression.BrotliEncoder.GetMaxCompressedLength(jsonBytes.Length));
             try
@@ -84,26 +78,11 @@ namespace TSKT.Files
                     }
                 }
 
-                Write(buffer, HashSize + bodyLength, writer);
+                CryptUtil.Encrypt(buffer, 0, HashSize + bodyLength, key, writer);
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
-            }
-        }
-
-        /// <summary>
-        /// bufferの先頭からlengthバイトを、必要なら暗号化して書き出す。
-        /// </summary>
-        void Write(byte[] buffer, int length, IBufferWriter<byte> writer)
-        {
-            if (key != null)
-            {
-                CryptUtil.Encrypt(buffer, 0, length, key, writer);
-            }
-            else
-            {
-                writer.Write(buffer.AsSpan(0, length));
             }
         }
 
@@ -127,19 +106,11 @@ namespace TSKT.Files
 
         public T Deserialize<T>(ReadOnlySpan<byte> bytes)
         {
-            ReadOnlySpan<byte> buffer;
+            string jsonString;
+
             if (key != null)
             {
-                buffer = CryptUtil.Decrypt(bytes, key);
-            }
-            else
-            {
-                buffer = bytes;
-            }
-
-            string jsonString;
-            if (compress)
-            {
+                ReadOnlySpan<byte> buffer = CryptUtil.Decrypt(bytes, key);
                 //using var json = ZString.CreateUtf8StringBuilder();を使いたいがうまくいかないのでArrayBufferWriter
                 var json = new ArrayBufferWriter<byte>();
                 var signature = buffer[..HashSize];
@@ -163,7 +134,7 @@ namespace TSKT.Files
             }
             else
             {
-                jsonString = System.Text.Encoding.UTF8.GetString(buffer);
+                jsonString = System.Text.Encoding.UTF8.GetString(bytes);
             }
 
             return FromJson<T>(jsonString);
